@@ -13,6 +13,8 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  String? _errorMsg;
+
 	final passwordController = TextEditingController();
   final emailController = TextEditingController();
 	final nameController = TextEditingController();
@@ -34,15 +36,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
 				if(state is SignUpSuccess) {
 					setState(() {
 					  signUpRequired = false;
+            _errorMsg = null;
 					});
 				} else if(state is SignUpProcess) {
 					setState(() {
 					  signUpRequired = true;
+            _errorMsg = null;
 					});
 				} else if(state is SignUpFailure) {
-					return;
-				} 
-			},
+          setState(() {
+            signUpRequired = false;
+            _errorMsg = 'Sign up failed. Please check your information and try again.';
+
+           /* ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(_errorMsg!),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );*/
+          });
+        }
+      },
 			child: Form(
         key: _formKey,
         child: Center(
@@ -57,6 +72,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   obscureText: false,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(CupertinoIcons.mail_solid),
+                  errorMsg: _errorMsg,
                   validator: (val) {
                     if(val!.isEmpty) {
                       return 'Please fill in this field';													
@@ -76,6 +92,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   obscureText: obscurePassword,
                   keyboardType: TextInputType.visiblePassword,
                   prefixIcon: const Icon(CupertinoIcons.lock_fill),
+                  errorMsg: _errorMsg,
                   onChanged: (val) {
                     if(val!.contains(RegExp(r'[A-Z]'))) {
                       setState(() {
@@ -213,6 +230,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   obscureText: false,
                   keyboardType: TextInputType.name,
                   prefixIcon: const Icon(CupertinoIcons.person_fill),
+                  errorMsg: _errorMsg,
                   validator: (val) {
                     if(val!.isEmpty) {
                       return 'Please fill in this field';													
