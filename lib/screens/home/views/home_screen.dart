@@ -1,9 +1,31 @@
 import 'package:emonic/blocs/authentication_bloc/authentication_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:emonic/screens/home/views/target_pengguna.dart'; // target_pengguna
 
-class HomeScreen extends StatelessWidget {
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
+  void _onTabTapped(int index) {
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const TargetPenggunaanScreen()),
+      );
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,11 +70,8 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Electricity Usage Card
               _buildUsageCard(),
               const SizedBox(height: 16),
-
-              // Energy Cards Row
               Row(
                 children: [
                   Expanded(
@@ -79,19 +98,16 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Reward Card
               _buildRewardCard(),
               const SizedBox(height: 16),
-
-              // Electricity Consumption Chart
               _buildConsumptionChart(),
             ],
           ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
+        currentIndex: _currentIndex,
+        onTap: _onTabTapped,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
@@ -364,8 +380,8 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            children: [
-              const Text(
+            children: const [
+              Text(
                 '140.65',
                 style: TextStyle(
                   fontSize: 18,
@@ -373,7 +389,7 @@ class HomeScreen extends StatelessWidget {
                   color: Colors.blue,
                 ),
               ),
-              const Text(
+              Text(
                 ' kWh',
                 style: TextStyle(
                   fontSize: 12,
@@ -393,18 +409,14 @@ class HomeScreen extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
-            child: const Stack(
-              children: [
-                // Here we would normally place the chart
-              ],
-            ),
+            child: const Stack(),
           ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(
               7,
-                  (index) => Text(
+              (index) => Text(
                 '${13 + index}:00',
                 style: const TextStyle(
                   fontSize: 10,
@@ -431,7 +443,6 @@ class HomeScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              // Trigger logout event
               context.read<AuthenticationBloc>().add(LogoutRequested());
               Navigator.pop(context);
             },
