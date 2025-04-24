@@ -14,7 +14,8 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
   DateTime? startDate;
   DateTime? endDate;
   final targetController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();  // GlobalKey untuk form
+  final _formKey = GlobalKey<FormState>();
+  DocumentSnapshot? editingTarget;
 
   List<String> golonganOptions = [
     "R-1/TR Daya 900 VA",
@@ -30,7 +31,6 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     "Biaya (Rp)",
   ];
 
-  // Fungsi untuk memilih tanggal
   Future<void> pickDate({required bool isStart}) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -49,41 +49,52 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     }
   }
 
-  // Fungsi untuk menyimpan data ke Firestore
   void _saveToFirestore() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Validasi berhasil
       if (selectedGolongan != null &&
           selectedParameter != null &&
           startDate != null &&
           endDate != null &&
           targetController.text.isNotEmpty) {
         try {
-          // Simpan data ke Firestore
-          await FirebaseFirestore.instance.collection('targets').add({
-            'golongan': selectedGolongan,
-            'parameter': selectedParameter,
-            'startDate': Timestamp.fromDate(startDate!),
-            'endDate': Timestamp.fromDate(endDate!),
-            'target': targetController.text,
-            'createdAt': Timestamp.now(),
-          });
+          if (editingTarget != null) {
+            await FirebaseFirestore.instance
+                .collection('targets')
+                .doc(editingTarget!.id)
+                .update({
+              'golongan': selectedGolongan,
+              'parameter': selectedParameter,
+              'startDate': Timestamp.fromDate(startDate!),
+              'endDate': Timestamp.fromDate(endDate!),
+              'target': targetController.text,
+              'updatedAt': Timestamp.now(),
+            });
+          } else {
+            await FirebaseFirestore.instance.collection('targets').add({
+              'golongan': selectedGolongan,
+              'parameter': selectedParameter,
+              'startDate': Timestamp.fromDate(startDate!),
+              'endDate': Timestamp.fromDate(endDate!),
+              'target': targetController.text,
+              'createdAt': Timestamp.now(),
+            });
+          }
 
           print("Data berhasil disimpan");
-          // Kosongkan form setelah data disimpan
-          targetController.clear();
+
           setState(() {
+            editingTarget = null;
             selectedGolongan = null;
             selectedParameter = null;
             startDate = null;
             endDate = null;
+            targetController.clear();
           });
         } catch (e) {
           print("Terjadi error saat menyimpan data: $e");
         }
       }
     } else {
-      // Jika form tidak valid
       print("Form tidak valid");
     }
   }
@@ -91,135 +102,217 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("⚡ Target Penggunaan")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(  // Tambahkan Form untuk validasi
-          key: _formKey,  // Kunci form untuk validasi
-          child: Column(
-            children: [
-              // Dropdown untuk Golongan Rumah Tangga
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(labelText: "Golongan Rumah Tangga"),
-                value: selectedGolongan,
-                onChanged: (value) => setState(() => selectedGolongan = value),
-                validator: (value) {
-                  if (value == null) {
-                    return 'Golongan harus dipilih';
-                  }
-                  return null;
-                },
-                items: golonganOptions
-                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                    .toList(),
-              ),
-              SizedBox(height: 12),
-              // Dropdown untuk Parameter Target
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(labelText: "Parameter Target"),
-                value: selectedParameter,
-                onChanged: (value) => setState(() => selectedParameter = value),
-                validator: (value) {
-                  if (value == null) {
-                    return 'Parameter harus dipilih';
-                  }
-                  return null;
-                },
-                items: parameterOptions
-                    .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                    .toList(),
-              ),
-              SizedBox(height: 12),
-              // Tanggal Mulai
-              TextFormField(
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: "Waktu Mulai",
-                ),
-                onTap: () => pickDate(isStart: true),
-                controller: TextEditingController(
-                    text: startDate != null
-                        ? "${startDate!.day}/${startDate!.month}/${startDate!.year}"
-                        : ""),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Tanggal mulai harus dipilih';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 12),
-              // Tanggal Akhir
-              TextFormField(
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: "Waktu Akhir",
-                ),
-                onTap: () => pickDate(isStart: false),
-                controller: TextEditingController(
-                    text: endDate != null
-                        ? "${endDate!.day}/${endDate!.month}/${endDate!.year}"
-                        : ""),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Tanggal akhir harus dipilih';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 12),
-              // Nilai Target
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: "Nilai Target",
-                ),
-                controller: targetController,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nilai target tidak boleh kosong';
-                  }
-                  return null;  // Validasi berhasil jika tidak ada error
-                },
-              ),
-              SizedBox(height: 20),
-              // Tombol Simpan
-              ElevatedButton(
-                onPressed: _saveToFirestore,  // Panggil simpan ke Firestore
-                child: Text("Simpan"),
-              ),
-              SizedBox(height: 20),
-              // Menampilkan Data dari Firestore
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('targets').snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Center(child: Text("Tidak ada data target"));
-                    }
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.lightBlueAccent, Colors.blue],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "⚡ TARGET ⚡",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                      shadows: [Shadow(blurRadius: 5, color: Colors.black26)],
+                    ),
+                  ),
+                  const Text(
+                    "PENGGUNAAN",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      shadows: [Shadow(blurRadius: 5, color: Colors.black26)],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildRoundedDropdown(
+                          label: "Golongan Rumah Tangga",
+                          value: selectedGolongan,
+                          items: golonganOptions,
+                          onChanged: (value) => setState(() => selectedGolongan = value),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildRoundedDropdown(
+                          label: "Parameter Target",
+                          value: selectedParameter,
+                          items: parameterOptions,
+                          onChanged: (value) => setState(() => selectedParameter = value),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildRoundedDateField("Waktu Mulai", startDate, () => pickDate(isStart: true)),
+                        const SizedBox(height: 12),
+                        _buildRoundedDateField("Waktu Akhir", endDate, () => pickDate(isStart: false)),
+                        const SizedBox(height: 12),
+                        _buildRoundedTextField("Nilai Target", targetController),
+                        const SizedBox(height: 30),
+                        ElevatedButton(
+                          onPressed: _saveToFirestore,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            backgroundColor: Colors.lightBlue.shade100,
+                            foregroundColor: Colors.white,
+                            textStyle: const TextStyle(fontSize: 18),
+                          ),
+                          child: const Text("Simpan"),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const Divider(color: Colors.white),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Histori Target",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('targets')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Text("Belum ada target", style: TextStyle(color: Colors.white));
+                      }
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          final doc = snapshot.data!.docs[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          final start = (data['startDate'] as Timestamp).toDate();
+                          final end = (data['endDate'] as Timestamp).toDate();
 
-                    var data = snapshot.data!.docs;
-                    return ListView.builder(
-                      itemCount: data.length,
-                      itemBuilder: (context, index) {
-                        var target = data[index];
-                        return ListTile(
-                          title: Text("Golongan: ${target['golongan']}"),
-                          subtitle: Text("Parameter: ${target['parameter']}"),
-                          trailing: Text("Target: ${target['target']}"),
-                        );
-                      },
-                    );
-                  },
-                ),
+                          return Card(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              title: Text("${data['golongan']} - ${data['parameter']}"),
+                              subtitle: Text(
+                                  "Target: ${data['target']} \n${start.day}/${start.month}/${start.year} - ${end.day}/${end.month}/${end.year}"),
+                              isThreeLine: true,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () {
+                                      setState(() {
+                                        editingTarget = doc;
+                                        selectedGolongan = data['golongan'];
+                                        selectedParameter = data['parameter'];
+                                        startDate = start;
+                                        endDate = end;
+                                        targetController.text = data['target'];
+                                      });
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () async {
+                                      await FirebaseFirestore.instance
+                                          .collection('targets')
+                                          .doc(doc.id)
+                                          .delete();
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRoundedDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      value: value,
+      onChanged: onChanged,
+      validator: (val) => val == null ? '$label harus dipilih' : null,
+      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+    );
+  }
+
+  Widget _buildRoundedDateField(String label, DateTime? date, VoidCallback onTap) {
+    return TextFormField(
+      readOnly: true,
+      onTap: onTap,
+      controller: TextEditingController(
+          text: date != null ? "${date.day}/${date.month}/${date.year}" : ""),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (val) => val == null || val.isEmpty ? '$label harus dipilih' : null,
+    );
+  }
+
+  Widget _buildRoundedTextField(String label, TextEditingController controller) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (val) => val == null || val.isEmpty ? '$label tidak boleh kosong' : null,
     );
   }
 }
