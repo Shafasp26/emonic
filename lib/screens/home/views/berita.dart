@@ -20,8 +20,103 @@ class EnergyMonitoringApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Sans',
       ),
-      home: BeritaScreen(),
+      home: HomeScreen(),
     );
+  }
+}
+
+// Add HomeScreen as the main screen that can navigate to BeritaScreen
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Energy Monitoring Community'),
+        backgroundColor: Color(0xFF0057A3),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Selamat Datang di Energy Monitoring Community',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => BeritaScreen()),
+                );
+              },
+              child: Text('Lihat Berita'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF0057A3),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class NewsArticle {
+  final String id;
+  final String title;
+  final String content;
+  final String? subtitle;
+  final String? subtitleContent;
+  final String? imageUrl;
+  final String category;
+  final String? type; // 'full', 'small', 'standard'
+  final DateTime createdAt;
+  bool isFavorite;
+
+  NewsArticle({
+    required this.id,
+    required this.title,
+    required this.content,
+    this.subtitle,
+    this.subtitleContent,
+    this.imageUrl,
+    required this.category,
+    this.type = 'standard',
+    required this.createdAt,
+    this.isFavorite = false,
+  });
+
+  factory NewsArticle.fromFirestore(DocumentSnapshot doc, {List<String> favoriteIds = const []}) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return NewsArticle(
+      id: doc.id,
+      title: data['title'] ?? '',
+      content: data['content'] ?? '',
+      subtitle: data['subtitle'],
+      subtitleContent: data['subtitleContent'],
+      imageUrl: data['imageUrl'],
+      category: data['category'] ?? 'Uncategorized',
+      type: data['type'] ?? 'standard',
+      createdAt: data['createdAt'] != null 
+          ? (data['createdAt'] as Timestamp).toDate() 
+          : DateTime.now(),
+      isFavorite: favoriteIds.contains(doc.id),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'content': content,
+      'subtitle': subtitle,
+      'subtitleContent': subtitleContent,
+      'imageUrl': imageUrl,
+      'category': category,
+      'type': type,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
   }
 }
 
@@ -34,13 +129,138 @@ class _BeritaScreenState extends State<BeritaScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isMainElectricityOn = false;
   String _selectedCategory = 'Semua Kategori';
+  String _searchQuery = '';
+  List<NewsArticle> _newsArticles = [];
+  List<String> _favoriteArticleIds = [];
+  bool _isLoading = true;
+  String _userId = 'user_charlie'; // In a real app, this would be the authenticated user's ID
   
   final List<String> _tags = [
     'Energi Terbarukan',
     'Tips Hemat Energi',
     'Kebijakan Energi Terbarukan',
-    'Barang Rumah Tangga yang'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFavorites();
+  }
+
+  Future<void> _fetchFavorites() async {
+    try {
+      final favoritesDoc = await _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('favorites')
+          .get();
+      
+      setState(() {
+        _favoriteArticleIds = favoritesDoc.docs.map((doc) => doc.id).toList();
+      });
+      
+      _fetchNewsArticles();
+    } catch (e) {
+      print('Error fetching favorites: $e');
+      _fetchNewsArticles();
+    }
+  }
+
+  Future<void> _fetchNewsArticles() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      QuerySnapshot querySnapshot;
+      
+      if (_selectedCategory == 'Semua Kategori') {
+        querySnapshot = await _firestore
+            .collection('news')
+            .orderBy('createdAt', descending: true)
+            .get();
+      } else {
+        querySnapshot = await _firestore
+            .collection('news')
+            .where('category', isEqualTo: _selectedCategory)
+            .orderBy('createdAt', descending: true)
+            .get();
+      }
+
+      List<NewsArticle> articles = querySnapshot.docs
+          .map((doc) => NewsArticle.fromFirestore(doc, favoriteIds: _favoriteArticleIds))
+          .toList();
+
+      // Filter by search query if provided
+      if (_searchQuery.isNotEmpty) {
+        articles = articles
+            .where((article) =>
+                article.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                article.content.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
+      }
+
+      setState(() {
+        _newsArticles = articles;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching news articles: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite(NewsArticle article) async {
+    final favoriteRef = _firestore
+      .collection('users')
+      .doc(_userId)
+      .collection('favorites')
+      .doc(article.id);
+
+    setState(() {
+      article.isFavorite = !article.isFavorite;
+      
+      if (article.isFavorite) {
+        _favoriteArticleIds.add(article.id);
+      } else {
+        _favoriteArticleIds.remove(article.id);
+      }
+    });
+
+    try {
+      if (article.isFavorite) {
+        // Add to favorites
+        await favoriteRef.set(article.toMap());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Artikel ditambahkan ke favorit'))
+        );
+      } else {
+        // Remove from favorites
+        await favoriteRef.delete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Artikel dihapus dari favorit'))
+        );
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      // Revert state if operation fails
+      setState(() {
+        article.isFavorite = !article.isFavorite;
+        
+        if (article.isFavorite) {
+          _favoriteArticleIds.add(article.id);
+        } else {
+          _favoriteArticleIds.remove(article.id);
+        }
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mengubah status favorit'))
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +269,27 @@ class _BeritaScreenState extends State<BeritaScreen> {
     
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.bookmark, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FavoritesScreen(userId: _userId)),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -67,7 +308,11 @@ class _BeritaScreenState extends State<BeritaScreen> {
               _buildRecommendationTags(),
               SizedBox(height: 16),
               Expanded(
-                child: _buildNewsList(),
+                child: _isLoading 
+                  ? Center(child: CircularProgressIndicator())
+                  : _newsArticles.isEmpty
+                      ? Center(child: Text('Tidak ada berita yang ditemukan'))
+                      : _buildNewsList(),
               ),
             ],
           ),
@@ -144,10 +389,6 @@ class _BeritaScreenState extends State<BeritaScreen> {
             ),
           ],
         ),
-        IconButton(
-          icon: Icon(Icons.bookmark_border),
-          onPressed: () {},
-        ),
       ],
     );
   }
@@ -166,28 +407,67 @@ class _BeritaScreenState extends State<BeritaScreen> {
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(vertical: 8),
         ),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+          _fetchNewsArticles();
+        },
       ),
     );
   }
 
   Widget _buildCategoryDropdown() {
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        color: Color(0xFFE6F0FF),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              _selectedCategory,
-              style: TextStyle(color: Colors.black87),
-            ),
-            Icon(Icons.keyboard_arrow_down),
-          ],
+    final List<String> categories = [
+      'Semua Kategori',
+      'Dasar Energi',
+      'Energi Terbarukan',
+      'Tips Hemat Energi',
+      'Kebijakan Energi Terbarukan',
+    ];
+
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (context) {
+            return ListView.builder(
+              shrinkWrap: true,
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(categories[index]),
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = categories[index];
+                    });
+                    _fetchNewsArticles();
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+      child: Container(
+        height: 40,
+        decoration: BoxDecoration(
+          color: Color(0xFFE6F0FF),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _selectedCategory,
+                style: TextStyle(color: Colors.black87),
+              ),
+              Icon(Icons.keyboard_arrow_down),
+            ],
+          ),
         ),
       ),
     );
@@ -206,22 +486,32 @@ class _BeritaScreenState extends State<BeritaScreen> {
           spacing: 8,
           runSpacing: 8,
           children: _tags.map((tag) {
-            return Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Color(0xFFE6F0FF),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    tag,
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.close, size: 12),
-                ],
+            return GestureDetector(
+              onTap: () {
+                if (tag == 'Energi Terbarukan' || tag == 'Tips Hemat Energi' || tag == 'Kebijakan Energi Terbarukan') {
+                  setState(() {
+                    _selectedCategory = tag;
+                  });
+                  _fetchNewsArticles();
+                }
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Color(0xFFE6F0FF),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      tag,
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.close, size: 12),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -230,52 +520,36 @@ class _BeritaScreenState extends State<BeritaScreen> {
     );
   }
 
+
   Widget _buildNewsList() {
-    return ListView(
+    return ListView.separated(
       padding: EdgeInsets.zero,
-      children: [
-        _buildArticleCard(
-          title: 'Apa Itu Energi?',
-          content:
-              'Energi adalah kemampuan untuk melakukan pekerjaan atau menggerakkan sesuatu.',
-          subtitle: 'Mengapa kita harus menghemat energi?',
-          subtitleContent:
-              'Kita perlu menghemat energi karena sumber daya terbatas, mengurangi emisi, mejaga lingkungan, mengurangi biaya, dan melestarikan energi.',
-          image: 'assets/energy_illustration.png',
-          imageAlignment: ImageAlignment.right,
-          showImage: true,
-        ),
-        Divider(),
-        _buildSmallArticleCard(
-          title: 'Energi Terbarukan Sumbang Rekor 30% Listrik Global di 2023',
-          image: 'assets/renewable_energy.jpg',
-          content:
-              'Tahun ini sumber energi terbarukan seperti tenaga surya dan angin, menyumbang rekor tertinggi dalam sejarah sebagai sumber listrik di dunia. Data studi global menunjukkan peningkatan investasi di negara-negara seperti Tiongkok, AS, dan Eropa.',
-        ),
-        Divider(),
-        _buildSmallArticleCard(
-          title: 'Pemerintah Optimis Tahun 2025 Tercapai',
-          image: 'assets/government.jpg',
-          content:
-              'Pemerintah Indonesia yakin akan di tercapainya target 23% energi terbarukan pada tahun 2025 berkat pembangunan energi baru terbarukan (EBT).',
-        ),
-        Divider(),
-        _buildFullWidthArticleCard(
-          title: 'Program Penghematan Energi oleh Pemerintah dan PLN',
-          content:
-              'Berbagai program diluncurkan oleh Pemerintah dan PLN untuk meningkatkan efisiensi energi pada bangunan pemerintah dan layanan publik, termasuk membangun teknologi pintar untuk pengelolaan energi.',
-        ),
-      ],
+      itemCount: _newsArticles.length,
+      separatorBuilder: (context, index) => Divider(),
+      itemBuilder: (context, index) {
+        final article = _newsArticles[index];
+        
+        if (article.type == 'small') {
+          return _buildSmallArticleCard(
+            article: article,
+          );
+        } else if (article.type == 'full') {
+          return _buildFullWidthArticleCard(
+            article: article,
+          );
+        } else {
+          // Default to standard article layout
+          return _buildArticleCard(
+            article: article,
+            imageAlignment: index % 2 == 0 ? ImageAlignment.right : ImageAlignment.left,
+          );
+        }
+      },
     );
   }
 
   Widget _buildArticleCard({
-    required String title,
-    required String content,
-    String? subtitle,
-    String? subtitleContent,
-    String? image,
-    bool showImage = false,
+    required NewsArticle article,
     ImageAlignment imageAlignment = ImageAlignment.left,
   }) {
     return Container(
@@ -286,23 +560,36 @@ class _BeritaScreenState extends State<BeritaScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (imageAlignment == ImageAlignment.left && showImage)
-                _buildImageContainer(image),
-              SizedBox(width: imageAlignment == ImageAlignment.left && showImage ? 12 : 0),
+              if (imageAlignment == ImageAlignment.left && article.imageUrl != null)
+                _buildImageContainer(article.imageUrl),
+              SizedBox(width: imageAlignment == ImageAlignment.left && article.imageUrl != null ? 12 : 0),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            article.title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            article.isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                            color: article.isFavorite ? Color(0xFF0057A3) : Colors.grey,
+                          ),
+                          onPressed: () => _toggleFavorite(article),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 4),
                     Text(
-                      content,
+                      article.content,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.black87,
@@ -311,15 +598,15 @@ class _BeritaScreenState extends State<BeritaScreen> {
                   ],
                 ),
               ),
-              SizedBox(width: imageAlignment == ImageAlignment.right && showImage ? 12 : 0),
-              if (imageAlignment == ImageAlignment.right && showImage)
-                _buildImageContainer(image),
+              SizedBox(width: imageAlignment == ImageAlignment.right && article.imageUrl != null ? 12 : 0),
+              if (imageAlignment == ImageAlignment.right && article.imageUrl != null)
+                _buildImageContainer(article.imageUrl),
             ],
           ),
-          if (subtitle != null && subtitleContent != null) ...[
+          if (article.subtitle != null && article.subtitleContent != null) ...[
             SizedBox(height: 8),
             Text(
-              subtitle,
+              article.subtitle!,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -327,7 +614,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
             ),
             SizedBox(height: 4),
             Text(
-              subtitleContent,
+              article.subtitleContent!,
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.black87,
@@ -340,9 +627,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
   }
 
   Widget _buildSmallArticleCard({
-    required String title,
-    required String content,
-    required String image,
+    required NewsArticle article,
   }) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
@@ -360,18 +645,28 @@ class _BeritaScreenState extends State<BeritaScreen> {
                     SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        title,
+                        article.title,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
                       ),
                     ),
+                    IconButton(
+                      icon: Icon(
+                        article.isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                        color: article.isFavorite ? Color(0xFF0057A3) : Colors.grey,
+                        size: 18,
+                      ),
+                      constraints: BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                      onPressed: () => _toggleFavorite(article),
+                    ),
                   ],
                 ),
                 SizedBox(height: 4),
                 Text(
-                  content,
+                  article.content,
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black87,
@@ -390,11 +685,23 @@ class _BeritaScreenState extends State<BeritaScreen> {
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: AssetImage(image),
-                  fit: BoxFit.cover,
-                ),
+                image: article.imageUrl != null
+                    ? DecorationImage(
+                        image: article.imageUrl!.startsWith('http')
+                            ? NetworkImage(article.imageUrl!)
+                            : AssetImage(article.imageUrl!) as ImageProvider,
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
+              child: article.imageUrl == null
+                  ? Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: Colors.grey[400],
+                      ),
+                    )
+                  : null,
             ),
           ),
         ],
@@ -403,8 +710,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
   }
 
   Widget _buildFullWidthArticleCard({
-    required String title,
-    required String content,
+    required NewsArticle article,
   }) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
@@ -417,18 +723,25 @@ class _BeritaScreenState extends State<BeritaScreen> {
               SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  title,
+                  article.title,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
               ),
+              IconButton(
+                icon: Icon(
+                  article.isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                  color: article.isFavorite ? Color(0xFF0057A3) : Colors.grey,
+                ),
+                onPressed: () => _toggleFavorite(article),
+              ),
             ],
           ),
           SizedBox(height: 4),
           Text(
-            content,
+            article.content,
             style: TextStyle(
               fontSize: 10,
               color: Colors.black87,
@@ -448,7 +761,9 @@ class _BeritaScreenState extends State<BeritaScreen> {
         borderRadius: BorderRadius.circular(8),
         image: imagePath != null
             ? DecorationImage(
-                image: AssetImage(imagePath),
+                image: imagePath.startsWith('http')
+                    ? NetworkImage(imagePath)
+                    : AssetImage(imagePath) as ImageProvider,
                 fit: BoxFit.cover,
               )
             : null,
@@ -465,7 +780,202 @@ class _BeritaScreenState extends State<BeritaScreen> {
   }
 }
 
+// Add a new FavoritesScreen to display favorite articles
+class FavoritesScreen extends StatefulWidget {
+  final String userId;
+  
+  const FavoritesScreen({Key? key, required this.userId}) : super(key: key);
+
+  @override
+  _FavoritesScreenState createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  List<NewsArticle> _favoriteArticles = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFavoriteArticles();
+  }
+
+  Future<void> _fetchFavoriteArticles() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final favoritesSnapshot = await _firestore
+          .collection('users')
+          .doc(widget.userId)
+          .collection('favorites')
+          .get();
+
+      List<NewsArticle> articles = [];
+      for (var doc in favoritesSnapshot.docs) {
+        // Create NewsArticle from the favorite document
+        Map<String, dynamic> data = doc.data();
+        
+        articles.add(NewsArticle(
+          id: doc.id,
+          title: data['title'] ?? '',
+          content: data['content'] ?? '',
+          subtitle: data['subtitle'],
+          subtitleContent: data['subtitleContent'],
+          imageUrl: data['imageUrl'],
+          category: data['category'] ?? 'Uncategorized',
+          type: data['type'] ?? 'standard',
+          createdAt: data['createdAt'] != null 
+              ? (data['createdAt'] as Timestamp).toDate() 
+              : DateTime.now(),
+          isFavorite: true,
+        ));
+      }
+
+      setState(() {
+        _favoriteArticles = articles;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching favorite articles: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _removeFromFavorites(NewsArticle article) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(widget.userId)
+          .collection('favorites')
+          .doc(article.id)
+          .delete();
+
+      setState(() {
+        _favoriteArticles.removeWhere((a) => a.id == article.id);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Artikel dihapus dari favorit'))
+      );
+    } catch (e) {
+      print('Error removing article from favorites: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menghapus artikel dari favorit'))
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Berita Favorit'),
+        backgroundColor: Color(0xFF0057A3),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: _isLoading 
+        ? Center(child: CircularProgressIndicator())
+        : _favoriteArticles.isEmpty
+            ? Center(child: Text('Belum ada artikel favorit'))
+            : ListView.separated(
+                padding: EdgeInsets.all(16),
+                itemCount: _favoriteArticles.length,
+                separatorBuilder: (context, index) => Divider(),
+                itemBuilder: (context, index) {
+                  final article = _favoriteArticles[index];
+                  return _buildFavoriteArticleCard(article);
+                },
+              ),
+    );
+  }
+
+  Widget _buildFavoriteArticleCard(NewsArticle article) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (article.imageUrl != null)
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+                image: DecorationImage(
+                  image: article.imageUrl!.startsWith('http')
+                      ? NetworkImage(article.imageUrl!)
+                      : AssetImage(article.imageUrl!) as ImageProvider,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          SizedBox(width: article.imageUrl != null ? 12 : 0),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        article.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.bookmark,
+                        color: Color(0xFF0057A3),
+                      ),
+                      onPressed: () => _removeFromFavorites(article),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Text(
+                  article.content,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Kategori: ${article.category}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 enum ImageAlignment {
   left,
   right,
 }
+
+
