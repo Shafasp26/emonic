@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (index == 3) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const BeritaScreen()),
+        MaterialPageRoute(builder: (context) => BeritaScreen()),
       );
     } else {
       setState(() {
