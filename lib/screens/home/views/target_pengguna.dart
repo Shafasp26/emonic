@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:emonic/screens/home/views/history_target_screen.dart'; // Pastikan path ini benar
 
 class TargetPenggunaanScreen extends StatefulWidget {
   const TargetPenggunaanScreen({Key? key}) : super(key: key);
@@ -15,8 +16,8 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
   DateTime? endDate;
   final targetController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  DocumentSnapshot? editingTarget;
 
+  // Daftar opsi untuk dropdown
   List<String> golonganOptions = [
     "R-1/TR Daya 900 VA",
     "R-1/TR Daya 1.300 VA",
@@ -31,6 +32,7 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     "Biaya (Rp)",
   ];
 
+  // Fungsi untuk menampilkan date picker
   Future<void> pickDate({required bool isStart}) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -49,6 +51,7 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     }
   }
 
+  // Fungsi untuk menyimpan data ke Firestore
   void _saveToFirestore() async {
     if (_formKey.currentState?.validate() ?? false) {
       if (selectedGolongan != null &&
@@ -57,52 +60,72 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
           endDate != null &&
           targetController.text.isNotEmpty) {
         try {
-          if (editingTarget != null) {
-            await FirebaseFirestore.instance
-                .collection('targets')
-                .doc(editingTarget!.id)
-                .update({
-              'golongan': selectedGolongan,
-              'parameter': selectedParameter,
-              'startDate': Timestamp.fromDate(startDate!),
-              'endDate': Timestamp.fromDate(endDate!),
-              'target': targetController.text,
-              'updatedAt': Timestamp.now(),
-            });
-          } else {
-            await FirebaseFirestore.instance.collection('targets').add({
-              'golongan': selectedGolongan,
-              'parameter': selectedParameter,
-              'startDate': Timestamp.fromDate(startDate!),
-              'endDate': Timestamp.fromDate(endDate!),
-              'target': targetController.text,
-              'createdAt': Timestamp.now(),
-            });
-          }
+          await FirebaseFirestore.instance.collection('targets').add({
+            'golongan': selectedGolongan,
+            'parameter': selectedParameter,
+            'startDate': Timestamp.fromDate(startDate!),
+            'endDate': Timestamp.fromDate(endDate!),
+            'target': targetController.text,
+            'createdAt': Timestamp.now(),
+          });
 
-          print("Data berhasil disimpan");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Data berhasil disimpan")),
+          );
 
+          // Bersihkan form setelah berhasil menyimpan
+          targetController.clear();
           setState(() {
-            editingTarget = null;
             selectedGolongan = null;
             selectedParameter = null;
             startDate = null;
             endDate = null;
-            targetController.clear();
           });
         } catch (e) {
+          // Handle error dengan lebih baik, misalnya tampilkan dialog error
           print("Terjadi error saat menyimpan data: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Terjadi kesalahan: $e")),
+          );
         }
       }
     } else {
-      print("Form tidak valid");
+      print("Form tidak valid"); // Ini untuk debugging
     }
+  }
+
+  // Fungsi untuk memeriksa apakah semua field telah terisi
+  bool _isFormFilled() {
+    return selectedGolongan != null &&
+        selectedParameter != null &&
+        startDate != null &&
+        endDate != null &&
+        targetController.text.isNotEmpty;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.blueAccent,
+        title: const Text("Target Penggunaan"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Riwayat Target',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const HistoryTargetScreen()), // Pastikan ini benar
+              );
+            },
+          ),
+        ],
+      ),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -111,208 +134,268 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "⚡ TARGET ⚡",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1.2,
-                      shadows: [Shadow(blurRadius: 5, color: Colors.black26)],
-                    ),
-                  ),
-                  const Text(
-                    "PENGGUNAAN",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      shadows: [Shadow(blurRadius: 5, color: Colors.black26)],
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        _buildRoundedDropdown(
-                          label: "Golongan Rumah Tangga",
-                          value: selectedGolongan,
-                          items: golonganOptions,
-                          onChanged: (value) => setState(() => selectedGolongan = value),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildRoundedDropdown(
-                          label: "Parameter Target",
-                          value: selectedParameter,
-                          items: parameterOptions,
-                          onChanged: (value) => setState(() => selectedParameter = value),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildRoundedDateField("Waktu Mulai", startDate, () => pickDate(isStart: true)),
-                        const SizedBox(height: 12),
-                        _buildRoundedDateField("Waktu Akhir", endDate, () => pickDate(isStart: false)),
-                        const SizedBox(height: 12),
-                        _buildRoundedTextField("Nilai Target", targetController),
-                        const SizedBox(height: 30),
-                        ElevatedButton(
-                          onPressed: _saveToFirestore,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 50),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                            backgroundColor: Colors.lightBlue.shade100,
-                            foregroundColor: Colors.white,
-                            textStyle: const TextStyle(fontSize: 18),
-                          ),
-                          child: const Text("Simpan"),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  const Divider(color: Colors.white),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Histori Target",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('targets')
-                        .orderBy('createdAt', descending: true)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Text("Belum ada target", style: TextStyle(color: Colors.white));
-                      }
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: snapshot.data!.docs.length,
-                        itemBuilder: (context, index) {
-                          final doc = snapshot.data!.docs[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          final start = (data['startDate'] as Timestamp).toDate();
-                          final end = (data['endDate'] as Timestamp).toDate();
-
-                          return Card(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            child: ListTile(
-                              title: Text("${data['golongan']} - ${data['parameter']}"),
-                              subtitle: Text(
-                                  "Target: ${data['target']} \n${start.day}/${start.month}/${start.year} - ${end.day}/${end.month}/${end.year}"),
-                              isThreeLine: true,
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
-                                    onPressed: () {
-                                      setState(() {
-                                        editingTarget = doc;
-                                        selectedGolongan = data['golongan'];
-                                        selectedParameter = data['parameter'];
-                                        startDate = start;
-                                        endDate = end;
-                                        targetController.text = data['target'];
-                                      });
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () async {
-                                      await FirebaseFirestore.instance
-                                          .collection('targets')
-                                          .doc(doc.id)
-                                          .delete();
-                                    },
-                                  ),
-                                ],
-                              ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 20),
+                          const Text(
+                            "⚡ TARGET ⚡",
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                              shadows: [
+                                Shadow(blurRadius: 5, color: Colors.black26)
+                              ],
                             ),
-                          );
-                        },
-                      );
-                    },
+                            textAlign: TextAlign.center,
+                          ),
+                          const Text(
+                            "PENGGUNAAN",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(blurRadius: 5, color: Colors.black26)
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 30),
+                          Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start, // Mengatur alignment form
+                              children: <Widget>[
+                                Text(
+                                  "Golongan Rumah Tangga",
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildRoundedDropdown(
+                                  label: "Golongan Rumah Tangga",
+                                  value: selectedGolongan,
+                                  items: golonganOptions,
+                                  onChanged: (value) =>
+                                      setState(() => selectedGolongan = value),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "Parameter Target",
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildRoundedDropdown(
+                                  label: "Parameter Target",
+                                  value: selectedParameter,
+                                  items: parameterOptions,
+                                  onChanged: (value) =>
+                                      setState(() => selectedParameter = value),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "Waktu Mulai",
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildRoundedDateField(
+                                  label: "Waktu Mulai",
+                                  selectedDate: startDate,
+                                  onTap: () => pickDate(isStart: true),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "Waktu Akhir",
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildRoundedDateField(
+                                  label: "Waktu Akhir",
+                                  selectedDate: endDate,
+                                  onTap: () => pickDate(isStart: false),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "Nilai Target",
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildRoundedTextField(
+                                    label: "Nilai Target",
+                                    controller: targetController),
+                                const SizedBox(height: 30),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _saveToFirestore,
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16, horizontal: 50),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                      // Warna tombol berdasarkan status form
+                                      backgroundColor: _isFormFilled()
+                                          ? Colors.blue
+                                          : Colors.lightBlue.shade100,
+                                      foregroundColor: Colors.white,
+                                      textStyle: const TextStyle(fontSize: 18),
+                                    ),
+                                    child: const Text("Simpan"),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
   }
 
+  // Widget untuk membuat dropdown dengan tampilan yang diinginkan
   Widget _buildRoundedDropdown({
     required String label,
     required String? value,
     required List<String> items,
     required Function(String?) onChanged,
   }) {
-    return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12),
+      // Add horizontal padding
+      decoration: BoxDecoration(
+        color: Colors.white,
+        // Background color for the dropdown
+        borderRadius: BorderRadius.circular(12),
+        // Rounded corners
+        border: Border.all(
+          color: Colors.grey[300]!, // Border color
+        ),
       ),
-      value: value,
-      onChanged: onChanged,
-      validator: (val) => val == null ? '$label harus dipilih' : null,
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        onChanged: onChanged,
+        items: items.map((item) {
+          return DropdownMenuItem<String>(
+            value: item,
+            child: Text(item,
+                style: TextStyle(
+                    color:
+                        Colors.black)), // Text color for the options
+          );
+        }).toList(),
+        decoration: InputDecoration(
+          labelText: label,
+          // Label text
+          labelStyle: TextStyle(color: Colors.grey[700]),
+          border: InputBorder.none,
+          // Remove the default border
+        ),
+        style: const TextStyle(
+            color:
+                Colors.black), // Text color when a value is selected
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return '$label harus dipilih';
+          }
+          return null;
+        },
+        icon: Icon(Icons.arrow_drop_down,
+            color: Colors.grey[700]), // Custom dropdown icon color
+        isExpanded:
+            true, // Make the dropdown expand to the available width
+      ),
     );
   }
 
-  Widget _buildRoundedDateField(String label, DateTime? date, VoidCallback onTap) {
+  // Widget untuk membuat input field tanggal dengan tampilan yang diinginkan
+  Widget _buildRoundedDateField({
+    required String label,
+    required DateTime? selectedDate,
+    required VoidCallback onTap,
+  }) {
     return TextFormField(
-      readOnly: true,
-      onTap: onTap,
+      readOnly:
+          true, // Make the field read-only to prevent manual input
+      onTap:
+          onTap, // Trigger the date picker when the field is tapped
       controller: TextEditingController(
-          text: date != null ? "${date.day}/${date.month}/${date.year}" : ""),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        text: selectedDate != null
+            ? "${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}"
+            : "", // Format the date
       ),
-      validator: (val) => val == null || val.isEmpty ? '$label harus dipilih' : null,
+      decoration: InputDecoration(
+        labelText: label,
+        // Label text
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        filled: true,
+        fillColor: Colors.white, // White background
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          // Rounded corners
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        suffixIcon: Icon(Icons.calendar_today,
+            color: Colors.grey[700]), // Calendar icon
+      ),
+      validator: (value) {
+        if (selectedDate == null) {
+          return '$label harus dipilih';
+        }
+        return null;
+      },
+      style: const TextStyle(color: Colors.black),
     );
   }
 
-  Widget _buildRoundedTextField(String label, TextEditingController controller) {
+  // Widget untuk membuat input field teks dengan tampilan yang diinginkan
+  Widget _buildRoundedTextField({
+    required String label,
+    required TextEditingController controller,
+  }) {
     return TextFormField(
       controller: controller,
-      keyboardType: TextInputType.number,
+      keyboardType:
+          TextInputType.number, // Use the appropriate keyboard type
       decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        // Label text
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        filled: true,
+        fillColor: Colors.white, // White background
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          // Rounded corners
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
       ),
-      validator: (val) => val == null || val.isEmpty ? '$label tidak boleh kosong' : null,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '$label tidak boleh kosong';
+        }
+        return null;
+      },
+      style: const TextStyle(color: Colors.black),
     );
   }
 }
+
