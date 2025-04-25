@@ -33,7 +33,8 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) => AlertDialog(
             title: const Text("Edit Target"),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0), // Padding horizontal dikurangi
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
             content: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -41,9 +42,8 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Dropdown untuk Golongan dengan SizedBox untuk mengatur lebar
                     SizedBox(
-                      width: 400.0, // Lebar ditingkatkan menjadi 400.0
+                      width: 400.0,
                       child: DropdownButtonFormField<String>(
                         decoration: InputDecoration(
                           filled: true,
@@ -74,10 +74,8 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-
-                    // Dropdown untuk Parameter dengan SizedBox untuk mengatur lebar
                     SizedBox(
-                      width: 400.0, // Lebar ditingkatkan menjadi 400.0
+                      width: 400.0,
                       child: DropdownButtonFormField<String>(
                         decoration: InputDecoration(
                           filled: true,
@@ -104,8 +102,6 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-
-                    // Text Field untuk Nilai Target
                     TextFormField(
                       controller: targetController,
                       keyboardType: TextInputType.number,
@@ -115,8 +111,6 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-
-                    // List Tile untuk memilih Waktu Mulai
                     ListTile(
                       title: Text(
                         "Waktu Mulai: ${startDate != null ? formatDate(Timestamp.fromDate(startDate!)) : ''}",
@@ -135,8 +129,6 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                       },
                     ),
                     const SizedBox(height: 10),
-
-                    // List Tile untuk memilih Waktu Akhir
                     ListTile(
                       title: Text(
                         "Waktu Akhir: ${endDate != null ? formatDate(Timestamp.fromDate(endDate!)) : ''}",
@@ -181,11 +173,11 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, // Button warna biru
+                  backgroundColor: Colors.blue,
                 ),
                 child: const Text(
                   "Simpan",
-                  style: TextStyle(color: Colors.white), // Text warna putih
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ],
@@ -234,7 +226,9 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
               final data = doc.data() as Map<String, dynamic>;
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.blue[50], // Warna latar belakang Card diubah menjadi biru muda
                 child: ListTile(
                   title: Text(data['golongan'] ?? ''),
                   subtitle: Column(
@@ -252,14 +246,14 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit),
-                        color: Colors.green, // Warna hijau untuk ikon edit
+                        color: Colors.green,
                         onPressed: () {
                           _showEditDialog(context, doc);
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete),
-                        color: Colors.red, // Warna merah untuk ikon delete
+                        color: Colors.red,
                         onPressed: () {
                           _deleteTarget(doc.id);
                         },
