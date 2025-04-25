@@ -20,6 +20,9 @@ dependencies:
   user_repository:
     path: packages/user_repository
 
+  intl: ^0.18.0  # <--- Tambahan untuk format tanggal
+  cached_network_image: ^3.2.3  # <--- Tambahan untuk menampilkan gambar dari URL
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

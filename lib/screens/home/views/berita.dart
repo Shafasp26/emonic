@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,205 +13,459 @@ class EnergyMonitoringApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Energy Monitoring Community',
       theme: ThemeData(
-        primaryColor: Color(0xFF0057A3), // Biru tua
-        scaffoldBackgroundColor: Color(0xFFEAF6FF), // Biru muda
-        appBarTheme: AppBarTheme(
-          backgroundColor: Color(0xFF0057A3),
-          foregroundColor: Colors.white,
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: Color(0xFFFFC700), // Kuning
-          foregroundColor: Colors.black,
-        ),
+        primaryColor: Color(0xFF0057A3),
+        scaffoldBackgroundColor: Colors.white,
+        fontFamily: 'Sans',
       ),
-      home: EnergyDashboard(),
-    );
-  }
-}
-
-class EnergyDashboard extends StatelessWidget {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Icon(Icons.bolt, color: Colors.yellow, size: 28),
-            SizedBox(width: 8),
-            Text(
-              'EMONIC',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-            ),
-          ],
-        ),
-        centerTitle: false,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore.collection('news').orderBy('timestamp', descending: true).snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
-          }
-
-          final newsDocs = snapshot.data!.docs;
-
-          if (newsDocs.isEmpty) {
-            return Center(
-              child: Text(
-                'Belum ada berita.',
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: newsDocs.length,
-            itemBuilder: (context, index) {
-              final data = newsDocs[index];
-              return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: ListTile(
-                  contentPadding: EdgeInsets.all(16),
-                  title: Text(data['title'], style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (data['imageUrl'] != null && data['imageUrl'].isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Image.network(data['imageUrl'], fit: BoxFit.cover),
-                        ),
-                      Text(
-                        data['content'],
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: Text(data['title']),
-                        content: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (data['imageUrl'] != null && data['imageUrl'].isNotEmpty)
-                              Image.network(data['imageUrl']),
-                            Text(data['content']),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text('Tutup'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const BeritaScreen()),
-          );
-        },
-        child: Icon(Icons.add),
-      ),
+      home: BeritaScreen(),
     );
   }
 }
 
 class BeritaScreen extends StatefulWidget {
-  const BeritaScreen({super.key});
-
   @override
-  State<BeritaScreen> createState() => _BeritaScreenState();
+  _BeritaScreenState createState() => _BeritaScreenState();
 }
 
 class _BeritaScreenState extends State<BeritaScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
-  final TextEditingController _imageUrlController = TextEditingController();
-
-  void _addNews() {
-    final title = _titleController.text.trim();
-    final content = _contentController.text.trim();
-    final imageUrl = _imageUrlController.text.trim();
-
-    if (title.isNotEmpty && content.isNotEmpty) {
-      _firestore.collection('news').add({
-        'title': title,
-        'content': content,
-        'timestamp': FieldValue.serverTimestamp(),
-        'imageUrl': imageUrl.isNotEmpty ? imageUrl : null,
-      });
-      _titleController.clear();
-      _contentController.clear();
-      _imageUrlController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Berita berhasil ditambahkan!')),
-      );
-    }
-  }
+  bool _isMainElectricityOn = false;
+  String _selectedCategory = 'Semua Kategori';
+  
+  final List<String> _tags = [
+    'Energi Terbarukan',
+    'Tips Hemat Energi',
+    'Kebijakan Energi Terbarukan',
+    'Barang Rumah Tangga yang'
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final DateTime now = DateTime.now();
+    final String formattedDate = DateFormat('EEEE d, yyyy').format(now);
+    
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Tambah Berita Energi'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(labelText: 'Judul Berita'),
-                ),
-                TextField(
-                  controller: _contentController,
-                  decoration: InputDecoration(labelText: 'Konten Berita'),
-                  maxLines: 4,
-                ),
-                TextField(
-                  controller: _imageUrlController,
-                  decoration: InputDecoration(labelText: 'Link Gambar Cover (Opsional)'),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: _addNews,
-                  icon: Icon(Icons.add),
-                  label: Text('Tambah Berita'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFFFC700),
-                    foregroundColor: Colors.black,
-                  ),
-                ),
-              ],
-            ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 16),
+              _buildHeader(formattedDate),
+              SizedBox(height: 24),
+              _buildNewsTitle(),
+              SizedBox(height: 16),
+              _buildSearchBar(),
+              SizedBox(height: 12),
+              _buildCategoryDropdown(),
+              SizedBox(height: 16),
+              _buildRecommendationTags(),
+              SizedBox(height: 16),
+              Expanded(
+                child: _buildNewsList(),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
+  Widget _buildHeader(String formattedDate) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Hi Charlie',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            Text(
+              formattedDate,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Text(
+              'Switch to main electricity',
+              style: TextStyle(fontSize: 12),
+            ),
+            Switch(
+              value: _isMainElectricityOn,
+              onChanged: (value) {
+                setState(() {
+                  _isMainElectricityOn = value;
+                });
+              },
+              activeColor: Color(0xFF0057A3),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewsTitle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.menu_book, color: Colors.white),
+            ),
+            SizedBox(width: 8),
+            Text(
+              'NEWS',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        IconButton(
+          icon: Icon(Icons.bookmark_border),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: Color(0xFFE6F0FF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Search...',
+          prefixIcon: Icon(Icons.search, size: 20),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: Color(0xFFE6F0FF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _selectedCategory,
+              style: TextStyle(color: Colors.black87),
+            ),
+            Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecommendationTags() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Rekomendasi :',
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _tags.map((tag) {
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Color(0xFFE6F0FF),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    tag,
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.close, size: 12),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewsList() {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        _buildArticleCard(
+          title: 'Apa Itu Energi?',
+          content:
+              'Energi adalah kemampuan untuk melakukan pekerjaan atau menggerakkan sesuatu.',
+          subtitle: 'Mengapa kita harus menghemat energi?',
+          subtitleContent:
+              'Kita perlu menghemat energi karena sumber daya terbatas, mengurangi emisi, mejaga lingkungan, mengurangi biaya, dan melestarikan energi.',
+          image: 'assets/energy_illustration.png',
+          imageAlignment: ImageAlignment.right,
+          showImage: true,
+        ),
+        Divider(),
+        _buildSmallArticleCard(
+          title: 'Energi Terbarukan Sumbang Rekor 30% Listrik Global di 2023',
+          image: 'assets/renewable_energy.jpg',
+          content:
+              'Tahun ini sumber energi terbarukan seperti tenaga surya dan angin, menyumbang rekor tertinggi dalam sejarah sebagai sumber listrik di dunia. Data studi global menunjukkan peningkatan investasi di negara-negara seperti Tiongkok, AS, dan Eropa.',
+        ),
+        Divider(),
+        _buildSmallArticleCard(
+          title: 'Pemerintah Optimis Tahun 2025 Tercapai',
+          image: 'assets/government.jpg',
+          content:
+              'Pemerintah Indonesia yakin akan di tercapainya target 23% energi terbarukan pada tahun 2025 berkat pembangunan energi baru terbarukan (EBT).',
+        ),
+        Divider(),
+        _buildFullWidthArticleCard(
+          title: 'Program Penghematan Energi oleh Pemerintah dan PLN',
+          content:
+              'Berbagai program diluncurkan oleh Pemerintah dan PLN untuk meningkatkan efisiensi energi pada bangunan pemerintah dan layanan publik, termasuk membangun teknologi pintar untuk pengelolaan energi.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArticleCard({
+    required String title,
+    required String content,
+    String? subtitle,
+    String? subtitleContent,
+    String? image,
+    bool showImage = false,
+    ImageAlignment imageAlignment = ImageAlignment.left,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (imageAlignment == ImageAlignment.left && showImage)
+                _buildImageContainer(image),
+              SizedBox(width: imageAlignment == ImageAlignment.left && showImage ? 12 : 0),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      content,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: imageAlignment == ImageAlignment.right && showImage ? 12 : 0),
+              if (imageAlignment == ImageAlignment.right && showImage)
+                _buildImageContainer(image),
+            ],
+          ),
+          if (subtitle != null && subtitleContent != null) ...[
+            SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              subtitleContent,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallArticleCard({
+    required String title,
+    required String content,
+    required String image,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.energy_savings_leaf, size: 16, color: Colors.grey),
+                    SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Text(
+                  content,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+                image: DecorationImage(
+                  image: AssetImage(image),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFullWidthArticleCard({
+    required String title,
+    required String content,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.energy_savings_leaf, size: 16, color: Colors.grey),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4),
+          Text(
+            content,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageContainer(String? imagePath) {
+    return Container(
+      width: 100,
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(8),
+        image: imagePath != null
+            ? DecorationImage(
+                image: AssetImage(imagePath),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      child: imagePath == null
+          ? Center(
+              child: Icon(
+                Icons.image_not_supported,
+                color: Colors.grey[400],
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+enum ImageAlignment {
+  left,
+  right,
 }
