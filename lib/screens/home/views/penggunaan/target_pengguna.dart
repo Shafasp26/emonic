@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:emonic/screens/home/views/history_target_screen.dart'; // Pastikan path ini benar
+import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart'; // Pastikan path ini benar
+import 'package:emonic/screens/home/views/penggunaan/berhasil_input_screen.dart'; // Sesuaikan path ini
 
 class TargetPenggunaanScreen extends StatefulWidget {
   const TargetPenggunaanScreen({Key? key}) : super(key: key);
@@ -69,18 +70,12 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
             'createdAt': Timestamp.now(),
           });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Data berhasil disimpan")),
+          // Navigasi ke BerhasilInputScreen setelah berhasil menyimpan
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const BerhasilInputScreen()),
           );
 
-          // Bersihkan form setelah berhasil menyimpan
-          targetController.clear();
-          setState(() {
-            selectedGolongan = null;
-            selectedParameter = null;
-            startDate = null;
-            endDate = null;
-          });
         } catch (e) {
           // Handle error dengan lebih baik, misalnya tampilkan dialog error
           print("Terjadi error saat menyimpan data: $e");
@@ -177,7 +172,8 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
                           Form(
                             key: _formKey,
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start, // Mengatur alignment form
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start, // Mengatur alignment form
                               children: <Widget>[
                                 Text(
                                   "Golongan Rumah Tangga",
@@ -239,21 +235,35 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
-                                    onPressed: _saveToFirestore,
+                                    onPressed: _isFormFilled()
+                                        ? _saveToFirestore
+                                        : null, // Nonaktifkan tombol jika form belum terisi
                                     style: ElevatedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 16, horizontal: 50),
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(12)),
-                                      // Warna tombol berdasarkan status form
+                                      // Warna tombol dan teks berdasarkan status form
                                       backgroundColor: _isFormFilled()
-                                          ? Colors.blue
-                                          : Colors.lightBlue.shade100,
-                                      foregroundColor: Colors.white,
-                                      textStyle: const TextStyle(fontSize: 18),
+                                          ? const Color.fromARGB(
+                                              255, 250, 204, 2) // Kuning saat terisi
+                                          : Colors.lightBlue[100], // Biru sangat muda saat belum terisi
+                                      foregroundColor: _isFormFilled()
+                                          ? Colors.blue // Biru tua saat terisi
+                                          : Colors.white, // Putih saat belum terisi
+                                      textStyle:
+                                          const TextStyle(fontSize: 18),
                                     ),
-                                    child: const Text("Simpan"),
+                                    child: Text(
+                                      "Simpan",
+                                      style: TextStyle(
+                                        color: _isFormFilled()
+                                            ? const Color.fromARGB(
+                                                255, 255, 255, 255) // Putih saat terisi
+                                            : Colors.white, // Putih saat belum terisi
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -280,15 +290,12 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     required Function(String?) onChanged,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12),
-      // Add horizontal padding
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        // Background color for the dropdown
         borderRadius: BorderRadius.circular(12),
-        // Rounded corners
         border: Border.all(
-          color: Colors.grey[300]!, // Border color
+          color: Colors.grey[300]!,
         ),
       ),
       child: DropdownButtonFormField<String>(
@@ -297,32 +304,23 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
         items: items.map((item) {
           return DropdownMenuItem<String>(
             value: item,
-            child: Text(item,
-                style: TextStyle(
-                    color:
-                        Colors.black)), // Text color for the options
+            child: Text(item, style: const TextStyle(color: Colors.black)),
           );
         }).toList(),
         decoration: InputDecoration(
           labelText: label,
-          // Label text
           labelStyle: TextStyle(color: Colors.grey[700]),
           border: InputBorder.none,
-          // Remove the default border
         ),
-        style: const TextStyle(
-            color:
-                Colors.black), // Text color when a value is selected
+        style: const TextStyle(color: Colors.black),
         validator: (value) {
           if (value == null || value.isEmpty) {
             return '$label harus dipilih';
           }
           return null;
         },
-        icon: Icon(Icons.arrow_drop_down,
-            color: Colors.grey[700]), // Custom dropdown icon color
-        isExpanded:
-            true, // Make the dropdown expand to the available width
+        icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700]),
+        isExpanded: true,
       ),
     );
   }
@@ -334,28 +332,23 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     required VoidCallback onTap,
   }) {
     return TextFormField(
-      readOnly:
-          true, // Make the field read-only to prevent manual input
-      onTap:
-          onTap, // Trigger the date picker when the field is tapped
+      readOnly: true,
+      onTap: onTap,
       controller: TextEditingController(
         text: selectedDate != null
             ? "${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}"
-            : "", // Format the date
+            : "",
       ),
       decoration: InputDecoration(
         labelText: label,
-        // Label text
         labelStyle: TextStyle(color: Colors.grey[700]),
         filled: true,
-        fillColor: Colors.white, // White background
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          // Rounded corners
           borderSide: BorderSide(color: Colors.grey[300]!),
         ),
-        suffixIcon: Icon(Icons.calendar_today,
-            color: Colors.grey[700]), // Calendar icon
+        suffixIcon: Icon(Icons.calendar_today, color: Colors.grey[700]),
       ),
       validator: (value) {
         if (selectedDate == null) {
@@ -374,17 +367,14 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType:
-          TextInputType.number, // Use the appropriate keyboard type
+      keyboardType: TextInputType.number,
       decoration: InputDecoration(
         labelText: label,
-        // Label text
         labelStyle: TextStyle(color: Colors.grey[700]),
         filled: true,
-        fillColor: Colors.white, // White background
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          // Rounded corners
           borderSide: BorderSide(color: Colors.grey[300]!),
         ),
       ),
