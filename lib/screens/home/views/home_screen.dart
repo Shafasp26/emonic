@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:emonic/blocs/authentication_bloc/authentication_bloc.dart';
-import 'package:emonic/screens/home/views/target_pengguna.dart'; // target_pengguna
+import 'package:emonic/screens/home/views/penggunaan/target_pengguna.dart'; // target_pengguna
 import 'package:emonic/screens/home/views/berita.dart'; // Pastikan ini mengarah ke BeritaScreen
 
 class HomeScreen extends StatefulWidget {
