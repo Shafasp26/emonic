@@ -1,7 +1,7 @@
 import 'package:emonic/blocs/authentication_bloc/authentication_bloc.dart';
 import 'package:emonic/screens/auth/views/welcome_screen.dart';
 import 'package:emonic/screens/home/views/home_screen.dart';
-import 'package:emonic/screens/splash/splash_screen.dart';  // Add this import
+import 'package:emonic/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -19,24 +19,20 @@ class MyAppView extends StatelessWidget {
           onSurface: Colors.black,
           primary: Colors.blue,
           onPrimary: Colors.white,
-        )
+        ),
       ),
-      home: FutureBuilder(
-        future: Future.delayed(const Duration(seconds: 3)), // 3 seconds delay
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      home: BlocBuilder<AuthenticationBloc, AuthenticationState>(
+        builder: ((context, state) {
+          // Always show splash screen first when app starts
+          if (state.status == AuthenticationStatus.unknown) {
             return const SplashScreen();
           }
-          return BlocBuilder<AuthenticationBloc, AuthenticationState>(
-            builder: ((context, state) {
-              if(state.status == AuthenticationStatus.authenticated) {
-                return const HomeScreen();
-              } else {
-                return const WelcomeScreen();
-              }
-            }),
-          );
-        },
+          // After splash screen, check authentication status
+          if (state.status == AuthenticationStatus.authenticated) {
+            return const HomeScreen();
+          }
+          return const WelcomeScreen();
+        }),
       ),
     );
   }

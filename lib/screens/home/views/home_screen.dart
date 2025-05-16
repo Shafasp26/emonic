@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:emonic/blocs/authentication_bloc/authentication_bloc.dart';
 import 'package:emonic/screens/home/views/penggunaan/target_pengguna.dart';
 import 'package:emonic/screens/home/views/berita.dart';
 import 'package:emonic/screens/home/views/settings_screen.dart';
+import 'package:emonic/constants/colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,41 +31,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: AppColors.backgroundColor,
       appBar: _currentIndex == 0
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: AppColors.primaryBlue,
               elevation: 0,
               title: Row(
                 children: [
-                  const Icon(Icons.lightbulb, color: Color(0xFFFFCC00)),
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 30,
+                    width: 30,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     'EMONIC',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: AppColors.white,
                     ),
                   ),
                   const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined,
-                        color: Colors.red),
-                    onPressed: () {},
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _currentIndex = 4; // Navigate to settings
-                      });
-                    },
-                    child: const CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        'https://randomuser.me/api/portraits/men/1.jpg',
-                      ),
-                      radius: 15,
-                    ),
-                  ),
                 ],
               ),
             )
@@ -79,8 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: AppColors.primaryBlue,
+        unselectedItemColor: AppColors.textGrey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -110,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // Create a new widget for the home content
 class HomeContent extends StatelessWidget {
-  const HomeContent({Key? key}) : super(key: key);
+  const HomeContent({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -161,11 +146,11 @@ class HomeContent extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.textGrey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 1),
@@ -177,13 +162,14 @@ class HomeContent extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.flash_on, color: Colors.red),
+              Icon(Icons.flash_on, color: AppColors.red),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '30.276KWh',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
+                  color: AppColors.black,
                 ),
               ),
               const Spacer(),
@@ -191,10 +177,10 @@ class HomeContent extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF0E0),
+                  color: AppColors.orange,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
+                child: Text(
                   '40%',
                   style: TextStyle(
                     color: Colors.orange,
@@ -205,18 +191,18 @@ class HomeContent extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Electricity Usage',
             style: TextStyle(
-              color: Colors.grey,
+              color: AppColors.textGrey,
               fontSize: 12,
             ),
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: 0.4,
-            backgroundColor: Colors.grey.shade200,
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
+            backgroundColor: AppColors.progressGrey,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.red),
             minHeight: 5,
             borderRadius: BorderRadius.circular(2.5),
           ),

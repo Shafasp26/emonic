@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:emonic/blocs/authentication_bloc/authentication_bloc.dart';
 import 'package:emonic/screens/settings/privacy_policy_screen.dart';
+import 'package:emonic/screens/settings/edit_profile_screen.dart'; // Tambahkan import ini
+import 'package:emonic/screens/settings/change_email_screen.dart'; // Add this import
+import 'package:emonic/constants/colors.dart'; // Tambahkan import ini
+import 'package:emonic/screens/settings/help_screen.dart'; // Add this import
+import 'package:emonic/screens/settings/change_password_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -11,34 +16,12 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.black,
         elevation: 0,
       ),
       body: ListView(
         children: [
-          const SizedBox(height: 20),
-          // Profile Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundImage: NetworkImage(
-                    'https://randomuser.me/api/portraits/men/1.jpg',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    // TODO: Implement change profile picture
-                  },
-                  child: const Text('Change Profile Picture'),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 20),
           // Account Settings Section
           const Padding(
@@ -48,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: AppColors.textGrey,
               ),
             ),
           ),
@@ -56,51 +39,38 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.person_outline,
             title: 'Edit Profile',
             onTap: () {
-              // TODO: Navigate to edit profile screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
+              );
             },
           ),
           _buildSettingsTile(
             icon: Icons.email_outlined,
             title: 'Change Email',
             onTap: () {
-              // TODO: Navigate to change email screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChangeEmailScreen(),
+                ),
+              );
             },
           ),
           _buildSettingsTile(
             icon: Icons.lock_outline,
             title: 'Change Password',
             onTap: () {
-              // TODO: Navigate to change password screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChangePasswordScreen(),
+                ),
+              );
             },
           ),
-
-          // Notifications Section
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'Notifications',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          SwitchListTile(
-            title: const Text('Push Notifications'),
-            value: true, // TODO: Connect to actual settings state
-            onChanged: (bool value) {
-              // TODO: Implement push notifications toggle
-            },
-          ),
-          SwitchListTile(
-            title: const Text('Email Notifications'),
-            value: false, // TODO: Connect to actual settings state
-            onChanged: (bool value) {
-              // TODO: Implement email notifications toggle
-            },
-          ),
-
           // Other Settings
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -109,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: AppColors.textGrey,
               ),
             ),
           ),
@@ -117,7 +87,12 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              // TODO: Navigate to help screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpScreen(),
+                ),
+              );
             },
           ),
           _buildSettingsTile(
@@ -150,12 +125,12 @@ class SettingsScreen extends StatelessWidget {
     Color? textColor,
   }) {
     return ListTile(
-      leading: Icon(icon, color: textColor),
+      leading: Icon(icon, color: textColor ?? AppColors.black),
       title: Text(
         title,
-        style: TextStyle(color: textColor),
+        style: TextStyle(color: textColor ?? AppColors.black),
       ),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.textGrey),
       onTap: onTap,
     );
   }
@@ -164,6 +139,7 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppColors.white,
         contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
         title: const Text('Logout'),
         content: const Padding(
@@ -173,14 +149,15 @@ class SettingsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child:
+                Text('Cancel', style: TextStyle(color: AppColors.primaryBlue)),
           ),
           TextButton(
             onPressed: () {
               context.read<AuthenticationBloc>().add(LogoutRequested());
               Navigator.pop(context);
             },
-            child: const Text('Logout'),
+            child: Text('Logout', style: TextStyle(color: AppColors.red)),
           ),
         ],
       ),

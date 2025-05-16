@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/sign_up_bloc/sign_up_bloc.dart';
 import 'sign_in_screen.dart';
 import 'sign_up_screen.dart';
+import 'package:emonic/constants/colors.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -13,16 +14,13 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with TickerProviderStateMixin {
   late TabController tabController;
 
   @override
   void initState() {
-    tabController = TabController(
-      initialIndex: 0,
-      length: 2, 
-      vsync: this
-    );
+    tabController = TabController(initialIndex: 0, length: 2, vsync: this);
     super.initState();
   }
 
@@ -35,8 +33,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1976D2),
-              Color(0xFF42A5F5),
+              AppColors.primaryBlue,
+              AppColors.secondaryBlue,
             ],
           ),
         ),
@@ -47,38 +45,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
               child: Column(
                 children: [
                   const SizedBox(height: 40),
-                  // Profile avatar
-                  Container(
-                    height: 80,
-                    width: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 50,
-                    ),
+                  // Logo
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 100,
+                    width: 100,
                   ),
-                  const SizedBox(height: 20),
+                  //Gap between logo and text
+                  const SizedBox(height: 30),
                   // Welcome Text
                   const Text(
-                    'Hello !',
+                    'Welcome to Emonic',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.white,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
                   // Card for content
                   Expanded(
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.white,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
@@ -88,9 +78,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             padding: const EdgeInsets.only(top: 16),
                             child: TabBar(
                               controller: tabController,
-                              unselectedLabelColor: Colors.grey,
-                              labelColor: const Color(0xFF2196F3),
-                              indicatorColor: const Color(0xFF2196F3),
+                              unselectedLabelColor: AppColors.grey,
+                              labelColor: AppColors.primaryBlue,
+                              indicatorColor: AppColors.secondaryBlue,
                               indicatorSize: TabBarIndicatorSize.label,
                               dividerColor: Colors.transparent,
                               tabs: const [
@@ -99,7 +89,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                               ],
                             ),
                           ),
-                          
+
                           // TabBarView for Sign In / Sign Up forms
                           Expanded(
                             child: TabBarView(
@@ -107,22 +97,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                               children: [
                                 // Sign In Tab
                                 BlocProvider<SignInBloc>(
-                                  create: (context) => SignInBloc(
-                                    context.read<AuthenticationBloc>().userRepository
-                                  ),
+                                  create: (context) => SignInBloc(context
+                                      .read<AuthenticationBloc>()
+                                      .userRepository),
                                   child: const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 20),
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 20),
                                     child: SignInScreen(),
                                   ),
                                 ),
-                                
+
                                 // Sign Up Tab
                                 BlocProvider<SignUpBloc>(
-                                  create: (context) => SignUpBloc(
-                                    context.read<AuthenticationBloc>().userRepository
-                                  ),
+                                  create: (context) => SignUpBloc(context
+                                      .read<AuthenticationBloc>()
+                                      .userRepository),
                                   child: const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 20),
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 20),
                                     child: SignUpScreen(),
                                   ),
                                 ),

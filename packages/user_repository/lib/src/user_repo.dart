@@ -10,5 +10,8 @@ abstract class UserRepository {
   Future<void> signIn(String email, String password);
 
   Future<void> logOut();
-  
+
+  Future<String> updateEmail(String newEmail, String password);
+
+  Future<void> updatePassword(String currentPassword, String newPassword);
 }
