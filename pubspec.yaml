@@ -20,14 +20,31 @@ dependencies:
   user_repository:
     path: packages/user_repository
 
+ berita
   intl: ^0.18.0  # <--- Tambahan untuk format tanggal
   cached_network_image: ^3.2.3  # <--- Tambahan untuk menampilkan gambar dari URL
   url_launcher: ^6.1.12 
+=======
+  intl: ^0.18.0 
+ main
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
+    - assets/logo.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#1976D2"
+  adaptive_icon_foreground: "assets/icon/icon.png"
+  remove_alpha_ios: true

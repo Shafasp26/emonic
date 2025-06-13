@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:emonic/blocs/authentication_bloc/authentication_bloc.dart';
-import 'package:emonic/screens/home/views/target_pengguna.dart'; // target_pengguna
-import 'package:emonic/screens/home/views/berita.dart'; // Pastikan ini mengarah ke BeritaScreen
+import 'package:emonic/screens/home/views/penggunaan/target_pengguna.dart';
+import 'package:emonic/screens/home/views/berita.dart';
+import 'package:emonic/screens/home/views/settings_screen.dart';
+import 'package:emonic/constants/colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,108 +14,58 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
+  final List<Widget> _screens = [
+    const HomeContent(),
+    const TargetPenggunaanScreen(),
+    const Center(child: Text('Statistik')),
+    BeritaScreen(),
+    const SettingsScreen(),
+  ];
+
   void _onTabTapped(int index) {
-    if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const TargetPenggunaanScreen()),
-      );
-    } else if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => BeritaScreen()),
-      );
-    } else {
-      setState(() {
-        _currentIndex = index;
-      });
-    }
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-            const Icon(Icons.lightbulb, color: Color(0xFFFFCC00)),
-            const SizedBox(width: 8),
-            const Text(
-              'EMONIC',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.red),
-              onPressed: () {},
-            ),
-            GestureDetector(
-              onTap: () {
-                _showLogoutDialog(context);
-              },
-              child: const CircleAvatar(
-                backgroundImage: NetworkImage(
-                  'https://randomuser.me/api/portraits/men/1.jpg',
-                ),
-                radius: 15,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildUsageCard(),
-              const SizedBox(height: 16),
-              Row(
+      backgroundColor: AppColors.backgroundColor,
+      appBar: _currentIndex == 0
+          ? AppBar(
+              backgroundColor: AppColors.primaryBlue,
+              elevation: 0,
+              title: Row(
                 children: [
-                  Expanded(
-                    child: _buildEnergyCard(
-                      "Today's energy",
-                      '36.2',
-                      'kWh',
-                      const Color(0xFFFFF9E6),
-                      Icons.lightbulb_outline,
-                      const Color(0xFFFFCC00),
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 30,
+                    width: 30,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'EMONIC',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.white,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildEnergyCard(
-                      'Yesterday',
-                      '42.0',
-                      'kWh',
-                      const Color(0xFFF5F5F5),
-                      Icons.receipt_outlined,
-                      Colors.black54,
-                    ),
-                  ),
+                  const Spacer(),
                 ],
               ),
-              const SizedBox(height: 16),
-              _buildRewardCard(),
-              const SizedBox(height: 16),
-              _buildConsumptionChart(),
-            ],
-          ),
-        ),
+            )
+          : null,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: AppColors.primaryBlue,
+        unselectedItemColor: AppColors.textGrey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -141,16 +91,66 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+// Create a new widget for the home content
+class HomeContent extends StatelessWidget {
+  const HomeContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildUsageCard(),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildEnergyCard(
+                    "Today's energy",
+                    '36.2',
+                    'kWh',
+                    const Color(0xFFFFF9E6),
+                    Icons.lightbulb_outline,
+                    const Color(0xFFFFCC00),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildEnergyCard(
+                    'Yesterday',
+                    '42.0',
+                    'kWh',
+                    const Color(0xFFF5F5F5),
+                    Icons.receipt_outlined,
+                    Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildRewardCard(),
+            const SizedBox(height: 16),
+            _buildConsumptionChart(),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildUsageCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.textGrey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 1),
@@ -162,23 +162,25 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.flash_on, color: Colors.red),
+              Icon(Icons.flash_on, color: AppColors.red),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '30.276KWh',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
+                  color: AppColors.black,
                 ),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF0E0),
+                  color: AppColors.orange,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
+                child: Text(
                   '40%',
                   style: TextStyle(
                     color: Colors.orange,
@@ -189,18 +191,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Electricity Usage',
             style: TextStyle(
-              color: Colors.grey,
+              color: AppColors.textGrey,
               fontSize: 12,
             ),
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: 0.4,
-            backgroundColor: Colors.grey.shade200,
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
+            backgroundColor: AppColors.progressGrey,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.red),
             minHeight: 5,
             borderRadius: BorderRadius.circular(2.5),
           ),
@@ -209,7 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEnergyCard(String title, String value, String unit, Color backgroundColor, IconData icon, Color iconColor) {
+  Widget _buildEnergyCard(String title, String value, String unit,
+      Color backgroundColor, IconData icon, Color iconColor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -429,29 +432,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<AuthenticationBloc>().add(LogoutRequested());
-              Navigator.pop(context);
-            },
-            child: const Text('Logout'),
           ),
         ],
       ),

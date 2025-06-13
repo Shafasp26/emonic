@@ -1,9 +1,11 @@
 import 'dart:developer';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
 class SimpleBlocObserver extends BlocObserver {
   @override
-	void onCreate(BlocBase bloc) {
+  void onCreate(BlocBase bloc) {
     super.onCreate(bloc);
     log('onCreate -- bloc: ${bloc.runtimeType}');
   }
