@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +6,7 @@ import 'package:intl/intl.dart';
 class BeritaScreen extends StatefulWidget {
   final String? userName;
 
-  const BeritaScreen({Key? key, this.userName}) : super(key: key);
+  const BeritaScreen({super.key, this.userName});
 
   @override
   _BeritaScreenState createState() => _BeritaScreenState();
@@ -24,9 +23,9 @@ class _BeritaScreenState extends State<BeritaScreen> {
   List<String> _favoriteArticleIds = [];
   bool _isLoading = true;
   late String _userId;
-  
-  List<String> _activeTags = [];
-  
+
+  final List<String> _activeTags = [];
+
   final List<String> _availableTags = [
     'Energi Terbarukan',
     'Tips Hemat Energi',
@@ -53,8 +52,13 @@ class _BeritaScreenState extends State<BeritaScreen> {
 
   Future<void> _fetchFavorites() async {
     try {
-      final favoritesDoc = await _firestore.collection('users').doc(_userId).collection('favorites').get();
-      setState(() => _favoriteArticleIds = favoritesDoc.docs.map((doc) => doc.id).toList());
+      final favoritesDoc = await _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('favorites')
+          .get();
+      setState(() => _favoriteArticleIds =
+          favoritesDoc.docs.map((doc) => doc.id).toList());
       _fetchNewsArticles();
     } catch (e) {
       print('Error fetching favorites: $e');
@@ -66,19 +70,23 @@ class _BeritaScreenState extends State<BeritaScreen> {
     _firestore
         .collection('news')
         .where('isBreaking', isEqualTo: true)
-        .where('createdAt', isGreaterThan: Timestamp.fromDate(DateTime.now().subtract(Duration(hours: 24))))
+        .where('createdAt',
+            isGreaterThan: Timestamp.fromDate(
+                DateTime.now().subtract(Duration(hours: 24))))
         .orderBy('createdAt', descending: true)
         .limit(3)
         .snapshots()
         .listen((snapshot) {
       List<NewsArticle> breakingArticles = snapshot.docs
-          .map((doc) => NewsArticle.fromFirestore(doc, favoriteIds: _favoriteArticleIds))
+          .map((doc) =>
+              NewsArticle.fromFirestore(doc, favoriteIds: _favoriteArticleIds))
           .toList();
-      
-      if (breakingArticles.isNotEmpty && breakingArticles.length > _breakingNews.length) {
+
+      if (breakingArticles.isNotEmpty &&
+          breakingArticles.length > _breakingNews.length) {
         _showBreakingNewsNotification(breakingArticles.first);
       }
-      
+
       setState(() {
         _breakingNews = breakingArticles;
       });
@@ -91,7 +99,8 @@ class _BeritaScreenState extends State<BeritaScreen> {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           contentPadding: EdgeInsets.zero,
           content: Container(
             width: double.maxFinite,
@@ -153,7 +162,8 @@ class _BeritaScreenState extends State<BeritaScreen> {
                               return Container(
                                 height: 120,
                                 color: Colors.grey[300],
-                                child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey[600]),
+                                child: Icon(Icons.image_not_supported,
+                                    size: 40, color: Colors.grey[600]),
                               );
                             },
                             loadingBuilder: (context, child, loadingProgress) {
@@ -161,7 +171,8 @@ class _BeritaScreenState extends State<BeritaScreen> {
                               return Container(
                                 height: 120,
                                 color: Colors.grey[200],
-                                child: Center(child: CircularProgressIndicator()),
+                                child:
+                                    Center(child: CircularProgressIndicator()),
                               );
                             },
                           ),
@@ -241,14 +252,15 @@ class _BeritaScreenState extends State<BeritaScreen> {
           .get();
 
       List<NewsArticle> allArticles = querySnapshot.docs
-          .map((doc) => NewsArticle.fromFirestore(doc, favoriteIds: _favoriteArticleIds))
+          .map((doc) =>
+              NewsArticle.fromFirestore(doc, favoriteIds: _favoriteArticleIds))
           .toList();
 
       setState(() {
         _allNewsArticles = allArticles;
         _isLoading = false;
       });
-      
+
       // Apply filters after fetching
       _applyFilters();
     } catch (e) {
@@ -272,9 +284,15 @@ class _BeritaScreenState extends State<BeritaScreen> {
     if (_searchQuery.isNotEmpty) {
       filteredArticles = filteredArticles
           .where((article) =>
-              article.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              article.content.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              article.category.toLowerCase().contains(_searchQuery.toLowerCase()))
+              article.title
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()) ||
+              article.content
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()) ||
+              article.category
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()))
           .toList();
     }
 
@@ -285,7 +303,11 @@ class _BeritaScreenState extends State<BeritaScreen> {
 
   // FIXED: Update favorite status in all article lists
   Future<void> _toggleFavorite(NewsArticle article) async {
-    final favoriteRef = _firestore.collection('users').doc(_userId).collection('favorites').doc(article.id);
+    final favoriteRef = _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('favorites')
+        .doc(article.id);
 
     // Update the favorite status locally first
     setState(() {
@@ -295,7 +317,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
       } else {
         _favoriteArticleIds.remove(article.id);
       }
-      
+
       // FIXED: Update the favorite status in all lists
       _updateArticleFavoriteStatus(article.id, article.isFavorite);
     });
@@ -304,13 +326,11 @@ class _BeritaScreenState extends State<BeritaScreen> {
       if (article.isFavorite) {
         await favoriteRef.set(article.toMap());
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Artikel ditambahkan ke favorit'))
-        );
+            SnackBar(content: Text('Artikel ditambahkan ke favorit')));
       } else {
         await favoriteRef.delete();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Artikel dihapus dari favorit'))
-        );
+            SnackBar(content: Text('Artikel dihapus dari favorit')));
       }
     } catch (e) {
       print('Error toggling favorite: $e');
@@ -322,12 +342,11 @@ class _BeritaScreenState extends State<BeritaScreen> {
         } else {
           _favoriteArticleIds.remove(article.id);
         }
-        
+
         _updateArticleFavoriteStatus(article.id, article.isFavorite);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengubah status favorit'))
-      );
+          SnackBar(content: Text('Gagal mengubah status favorit')));
     }
   }
 
@@ -340,7 +359,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
         break;
       }
     }
-    
+
     // Update in _newsArticles
     for (int i = 0; i < _newsArticles.length; i++) {
       if (_newsArticles[i].id == articleId) {
@@ -348,7 +367,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
         break;
       }
     }
-    
+
     // Update in _breakingNews
     for (int i = 0; i < _breakingNews.length; i++) {
       if (_breakingNews[i].id == articleId) {
@@ -361,18 +380,22 @@ class _BeritaScreenState extends State<BeritaScreen> {
   // FIXED: Update like status in all article lists
   Future<void> _toggleLike(NewsArticle article) async {
     final articleRef = _firestore.collection('news').doc(article.id);
-    final userLikeRef = _firestore.collection('news').doc(article.id).collection('likes').doc(_userId);
+    final userLikeRef = _firestore
+        .collection('news')
+        .doc(article.id)
+        .collection('likes')
+        .doc(_userId);
 
     try {
       await _firestore.runTransaction((transaction) async {
         final articleDoc = await transaction.get(articleRef);
         final userLikeDoc = await transaction.get(userLikeRef);
-        
+
         if (!articleDoc.exists) return;
-        
+
         int currentLikes = articleDoc.data()?['likes'] ?? 0;
         bool userHasLiked = userLikeDoc.exists;
-        
+
         if (userHasLiked) {
           // Unlike
           transaction.update(articleRef, {'likes': currentLikes - 1});
@@ -394,9 +417,8 @@ class _BeritaScreenState extends State<BeritaScreen> {
       });
     } catch (e) {
       print('Error toggling like: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memberikan like'))
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal memberikan like')));
     }
   }
 
@@ -410,7 +432,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
         break;
       }
     }
-    
+
     // Update in _newsArticles
     for (int i = 0; i < _newsArticles.length; i++) {
       if (_newsArticles[i].id == articleId) {
@@ -419,7 +441,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
         break;
       }
     }
-    
+
     // Update in _breakingNews
     for (int i = 0; i < _breakingNews.length; i++) {
       if (_breakingNews[i].id == articleId) {
@@ -431,25 +453,32 @@ class _BeritaScreenState extends State<BeritaScreen> {
   }
 
   Future<void> _rateArticle(NewsArticle article, int rating) async {
-    final ratingRef = _firestore.collection('news').doc(article.id).collection('ratings').doc(_userId);
+    final ratingRef = _firestore
+        .collection('news')
+        .doc(article.id)
+        .collection('ratings')
+        .doc(_userId);
     final articleRef = _firestore.collection('news').doc(article.id);
 
     try {
       await _firestore.runTransaction((transaction) async {
         final ratingDoc = await transaction.get(ratingRef);
         final articleDoc = await transaction.get(articleRef);
-        
+
         if (!articleDoc.exists) return;
-        
-        Map<String, dynamic> articleData = articleDoc.data() as Map<String, dynamic>;
+
+        Map<String, dynamic> articleData =
+            articleDoc.data() as Map<String, dynamic>;
         int totalRatings = articleData['totalRatings'] ?? 0;
         double averageRating = articleData['averageRating']?.toDouble() ?? 0.0;
-        
+
         if (ratingDoc.exists) {
           // Update existing rating
           int oldRating = ratingDoc.data()?['rating'] ?? 0;
-          double newAverage = ((averageRating * totalRatings) - oldRating + rating) / totalRatings;
-          
+          double newAverage =
+              ((averageRating * totalRatings) - oldRating + rating) /
+                  totalRatings;
+
           transaction.update(articleRef, {'averageRating': newAverage});
           transaction.update(ratingRef, {
             'rating': rating,
@@ -457,8 +486,9 @@ class _BeritaScreenState extends State<BeritaScreen> {
           });
         } else {
           // New rating
-          double newAverage = ((averageRating * totalRatings) + rating) / (totalRatings + 1);
-          
+          double newAverage =
+              ((averageRating * totalRatings) + rating) / (totalRatings + 1);
+
           transaction.update(articleRef, {
             'averageRating': newAverage,
             'totalRatings': totalRatings + 1,
@@ -470,15 +500,13 @@ class _BeritaScreenState extends State<BeritaScreen> {
           });
         }
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Rating berhasil diberikan'))
-      );
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Rating berhasil diberikan')));
     } catch (e) {
       print('Error rating article: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memberikan rating'))
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal memberikan rating')));
     }
   }
 
@@ -554,9 +582,8 @@ class _BeritaScreenState extends State<BeritaScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context)
-        ),
+            icon: Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context)),
       ),
       body: SafeArea(
         child: Padding(
@@ -641,15 +668,15 @@ class _BeritaScreenState extends State<BeritaScreen> {
 
   String _buildFilterText() {
     List<String> filters = [];
-    
+
     if (_selectedCategory != 'Semua Kategori') {
       filters.add('Kategori: $_selectedCategory');
     }
-    
+
     if (_searchQuery.isNotEmpty) {
       filters.add('Pencarian: "$_searchQuery"');
     }
-    
+
     return filters.join(' • ');
   }
 
@@ -744,16 +771,20 @@ class _BeritaScreenState extends State<BeritaScreen> {
                                   width: 80,
                                   height: 80,
                                   color: Colors.grey[300],
-                                  child: Icon(Icons.image_not_supported, size: 30, color: Colors.grey[600]),
+                                  child: Icon(Icons.image_not_supported,
+                                      size: 30, color: Colors.grey[600]),
                                 );
                               },
-                              loadingBuilder: (context, child, loadingProgress) {
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Container(
                                   width: 80,
                                   height: 80,
                                   color: Colors.grey[200],
-                                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                  child: Center(
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2)),
                                 );
                               },
                             ),
@@ -778,7 +809,8 @@ class _BeritaScreenState extends State<BeritaScreen> {
                               Expanded(
                                 child: Text(
                                   article.content,
-                                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.black87),
                                   maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -803,8 +835,10 @@ class _BeritaScreenState extends State<BeritaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Hi $displayName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        Text(formattedDate, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+        Text('Hi $displayName',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        Text(formattedDate,
+            style: TextStyle(color: Colors.grey[600], fontSize: 14)),
       ],
     );
   }
@@ -816,26 +850,30 @@ class _BeritaScreenState extends State<BeritaScreen> {
             children: [
               Container(
                 padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(
+                    color: Colors.amber,
+                    borderRadius: BorderRadius.circular(8)),
                 child: Icon(Icons.menu_book, color: Colors.white),
               ),
               SizedBox(width: 8),
-              Text('NEWS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text('NEWS',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             ],
           ),
           IconButton(
             icon: Icon(Icons.bookmark, color: Colors.black),
             onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => FavoritesScreen(userId: _userId))
-            ),
+                context,
+                MaterialPageRoute(
+                    builder: (context) => FavoritesScreen(userId: _userId))),
           ),
         ],
       );
 
   Widget _buildSearchBar() => Container(
         height: 40,
-        decoration: BoxDecoration(color: Color(0xFFE6F0FF), borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+            color: Color(0xFFE6F0FF), borderRadius: BorderRadius.circular(20)),
         child: TextField(
           decoration: InputDecoration(
             hintText: 'Cari',
@@ -866,8 +904,8 @@ class _BeritaScreenState extends State<BeritaScreen> {
           itemCount: categories.length,
           itemBuilder: (context, index) => ListTile(
             title: Text(categories[index]),
-            trailing: _selectedCategory == categories[index] 
-                ? Icon(Icons.check, color: Colors.blue) 
+            trailing: _selectedCategory == categories[index]
+                ? Icon(Icons.check, color: Colors.blue)
                 : null,
             onTap: () {
               setState(() {
@@ -1014,7 +1052,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
                 ],
               ),
               SizedBox(height: 12),
-              
+
               // Content
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1049,7 +1087,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Image
                   if (article.imageUrl.isNotEmpty) ...[
                     SizedBox(width: 12),
@@ -1088,9 +1126,9 @@ class _BeritaScreenState extends State<BeritaScreen> {
                   ],
                 ],
               ),
-              
+
               SizedBox(height: 12),
-              
+
               // Actions
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1103,7 +1141,9 @@ class _BeritaScreenState extends State<BeritaScreen> {
                         child: Row(
                           children: [
                             Icon(
-                              article.isLiked ? Icons.favorite : Icons.favorite_border,
+                              article.isLiked
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
                               color: article.isLiked ? Colors.red : Colors.grey,
                               size: 18,
                             ),
@@ -1118,9 +1158,9 @@ class _BeritaScreenState extends State<BeritaScreen> {
                           ],
                         ),
                       ),
-                      
+
                       SizedBox(width: 16),
-                      
+
                       // Rating
                       GestureDetector(
                         onTap: () => _showRatingDialog(article),
@@ -1129,7 +1169,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
                             Icon(Icons.star, color: Colors.amber, size: 18),
                             SizedBox(width: 4),
                             Text(
-                              article.averageRating > 0 
+                              article.averageRating > 0
                                   ? article.averageRating.toStringAsFixed(1)
                                   : '0.0',
                               style: TextStyle(
@@ -1142,12 +1182,14 @@ class _BeritaScreenState extends State<BeritaScreen> {
                       ),
                     ],
                   ),
-                  
+
                   // Favorite button
                   GestureDetector(
                     onTap: () => _toggleFavorite(article),
                     child: Icon(
-                      article.isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                      article.isFavorite
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
                       color: article.isFavorite ? Colors.blue : Colors.grey,
                       size: 20,
                     ),
@@ -1180,7 +1222,7 @@ class _BeritaScreenState extends State<BeritaScreen> {
     final DateTime dateTime = timestamp.toDate();
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}h yang lalu';
     } else if (difference.inHours > 0) {
@@ -1225,7 +1267,8 @@ class NewsArticle {
     this.totalRatings = 0,
   });
 
-  factory NewsArticle.fromFirestore(DocumentSnapshot doc, {List<String> favoriteIds = const []}) {
+  factory NewsArticle.fromFirestore(DocumentSnapshot doc,
+      {List<String> favoriteIds = const []}) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return NewsArticle(
       id: doc.id,
@@ -1358,7 +1401,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Future<void> _fetchFavoriteArticles() async {
     setState(() => _isLoading = true);
-    
+
     try {
       // Get favorite article IDs
       final favoritesSnapshot = await _firestore
@@ -1419,15 +1462,25 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     // Apply category filter
     if (_selectedCategory != 'Semua Kategori') {
-      filtered = filtered.where((article) => article.category == _selectedCategory).toList();
+      filtered = filtered
+          .where((article) => article.category == _selectedCategory)
+          .toList();
     }
 
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((article) =>
-          article.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          article.content.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          article.category.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+      filtered = filtered
+          .where((article) =>
+              article.title
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()) ||
+              article.content
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()) ||
+              article.category
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()))
+          .toList();
     }
 
     return filtered;
@@ -1497,28 +1550,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Future<bool> _showConfirmationDialog(String title, String content) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(content),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Hapus'),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(title),
+              content: Text(content),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text('Hapus'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   void _showSuccessSnackBar(String message) {
@@ -1612,7 +1666,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               : Column(
                   children: [
                     _buildSearchAndFilter(),
-                    if (filteredArticles.isEmpty && (_searchQuery.isNotEmpty || _selectedCategory != 'Semua Kategori'))
+                    if (filteredArticles.isEmpty &&
+                        (_searchQuery.isNotEmpty ||
+                            _selectedCategory != 'Semua Kategori'))
                       Expanded(child: _buildNoResultsState())
                     else
                       Expanded(child: _buildFavoritesList(filteredArticles)),
@@ -1715,7 +1771,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 hintText: 'Cari artikel favorit...',
                 prefixIcon: Icon(Icons.search, color: Colors.grey),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                contentPadding:
+                    EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               ),
               onChanged: (value) {
                 setState(() => _searchQuery = value);
@@ -1723,7 +1780,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
           ),
           SizedBox(height: 12),
-          
+
           // Category filter
           Row(
             children: [
@@ -1756,7 +1813,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ],
           ),
-          
+
           // Stats
           if (_favoriteArticles.isNotEmpty) ...[
             SizedBox(height: 8),
@@ -1798,16 +1855,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ),
             ),
-            ...categories.map((category) => ListTile(
-              title: Text(category),
-              trailing: _selectedCategory == category 
-                  ? Icon(Icons.check, color: Colors.blue) 
-                  : null,
-              onTap: () {
-                setState(() => _selectedCategory = category);
-                Navigator.pop(context);
-              },
-            )).toList(),
+            ...categories
+                .map((category) => ListTile(
+                      title: Text(category),
+                      trailing: _selectedCategory == category
+                          ? Icon(Icons.check, color: Colors.blue)
+                          : null,
+                      onTap: () {
+                        setState(() => _selectedCategory = category);
+                        Navigator.pop(context);
+                      },
+                    ))
+                .toList(),
           ],
         ),
       ),
@@ -1865,14 +1924,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         width: 80,
                         height: 80,
                         color: Colors.grey[300],
-                        child: Icon(Icons.image_not_supported, color: Colors.grey[600]),
+                        child: Icon(Icons.image_not_supported,
+                            color: Colors.grey[600]),
                       );
                     },
                   ),
                 ),
                 SizedBox(width: 12),
               ],
-              
+
               // Content
               Expanded(
                 child: Column(
@@ -1883,7 +1943,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: _getCategoryColor(article.category),
                             borderRadius: BorderRadius.circular(8),
@@ -1908,7 +1969,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ],
                     ),
                     SizedBox(height: 8),
-                    
+
                     // Title
                     Text(
                       article.title,
@@ -1920,7 +1981,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4),
-                    
+
                     // Content preview
                     Text(
                       article.content,
@@ -1932,7 +1993,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 8),
-                    
+
                     // Date and stats
                     Row(
                       children: [

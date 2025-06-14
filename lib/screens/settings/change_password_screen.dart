@@ -93,8 +93,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ),
           ),
           onChanged: (val) {
-            if (val == null) return;
-
             setState(() {
               containsUpperCase = RegExp(r'[A-Z]').hasMatch(val);
               containsLowerCase = RegExp(r'[a-z]').hasMatch(val);

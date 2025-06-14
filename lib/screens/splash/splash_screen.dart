@@ -12,15 +12,27 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
-    Timer(
+    _timer = Timer(
       const Duration(seconds: 3),
       () {
-        context.read<AuthenticationBloc>().add(AuthenticationUserChanged(null));
+        if (mounted) {
+          context
+              .read<AuthenticationBloc>()
+              .add(AuthenticationUserChanged(null));
+        }
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override

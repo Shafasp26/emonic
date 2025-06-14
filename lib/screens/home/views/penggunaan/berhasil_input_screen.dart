@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart'; // Import halaman history
+import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart';
+import 'package:emonic/constants/colors.dart'; // Import colors
 
 class BerhasilInputScreen extends StatefulWidget {
   const BerhasilInputScreen({super.key});
@@ -12,19 +13,33 @@ class _BerhasilInputScreenState extends State<BerhasilInputScreen> {
   @override
   void initState() {
     super.initState();
-    // Tunggu beberapa detik sebelum kembali ke history screen
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HistoryTargetScreen()),
-      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HistoryTargetScreen()),
+        );
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue, // Warna latar belakang sesuai gambar
+      backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryBlue,
+        elevation: 0,
+        title: const Text(
+          'Status Input',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.white,
+          ),
+        ),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -32,12 +47,12 @@ class _BerhasilInputScreenState extends State<BerhasilInputScreen> {
             Stack(
               alignment: Alignment.center,
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 50,
-                  backgroundColor: Colors.green,
-                  child: Icon(
+                  backgroundColor: AppColors.green,
+                  child: const Icon(
                     Icons.check,
-                    color: Colors.white,
+                    color: AppColors.white,
                     size: 60,
                   ),
                 ),
@@ -48,7 +63,7 @@ class _BerhasilInputScreenState extends State<BerhasilInputScreen> {
                     angle: -0.2,
                     child: const Icon(
                       Icons.bolt,
-                      color: Colors.yellow,
+                      color: AppColors.yellow,
                       size: 30,
                     ),
                   ),
@@ -60,7 +75,7 @@ class _BerhasilInputScreenState extends State<BerhasilInputScreen> {
                     angle: 0.2,
                     child: const Icon(
                       Icons.bolt,
-                      color: Colors.yellow,
+                      color: AppColors.yellow,
                       size: 30,
                     ),
                   ),
@@ -73,11 +88,18 @@ class _BerhasilInputScreenState extends State<BerhasilInputScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppColors.black,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "Data penggunaan listrik berhasil disimpan",
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textGrey,
               ),
             ),
             const SizedBox(height: 30),
-            // Tombol keluar tidak diperlukan lagi untuk navigasi otomatis
           ],
         ),
       ),

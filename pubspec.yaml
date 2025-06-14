@@ -11,22 +11,24 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
 
+  # Firebase
   firebase_core: ^2.16.0
+  cloud_firestore: ^4.9.1
 
+  # State Management
   bloc: ^9.0.0
   flutter_bloc: ^9.1.0
   equatable: ^2.0.5
 
+  # Local Package
   user_repository:
     path: packages/user_repository
 
- berita
-  intl: ^0.18.0  # <--- Tambahan untuk format tanggal
-  cached_network_image: ^3.2.3  # <--- Tambahan untuk menampilkan gambar dari URL
-  url_launcher: ^6.1.12 
-=======
-  intl: ^0.18.0 
- main
+  # Utilities
+  intl: ^0.18.0
+  cached_network_image: ^3.2.3
+  url_launcher: ^6.1.12
+  firebase_auth: ^4.16.0
 
 dev_dependencies:
   flutter_test:
