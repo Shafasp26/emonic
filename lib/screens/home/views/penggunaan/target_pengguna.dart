@@ -4,9 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 import 'package:emonic/screens/home/views/database/database_helper.dart';
 import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart';
 import 'package:emonic/screens/home/views/penggunaan/berhasil_input_screen.dart';
+import 'package:emonic/constants/colors.dart';
 
 class TargetPenggunaanScreen extends StatefulWidget {
-  const TargetPenggunaanScreen({Key? key}) : super(key: key);
+  const TargetPenggunaanScreen({super.key});
 
   @override
   State<TargetPenggunaanScreen> createState() => _TargetPenggunaanScreenState();
@@ -43,6 +44,19 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
       initialDate: isStart ? DateTime.now() : (startDate ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primaryBlue,
+              onPrimary: AppColors.white,
+              surface: AppColors.white,
+              onSurface: AppColors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
@@ -88,22 +102,24 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
 
           await _databaseHelper.insertTarget(targetData);
 
+          Navigator.pop(context); // Close loading dialog
+
           // Navigasi ke BerhasilInputScreen setelah berhasil menyimpan
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const BerhasilInputScreen()),
+            MaterialPageRoute(
+                builder: (context) => const BerhasilInputScreen()),
           );
-
         } catch (e) {
-          // Handle error dengan lebih baik, misalnya tampilkan dialog error
-          print("Terjadi error saat menyimpan data: $e");
+          Navigator.pop(context); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Terjadi kesalahan: $e")),
+            SnackBar(
+              content: Text("Terjadi kesalahan: $e"),
+              backgroundColor: AppColors.red,
+            ),
           );
         }
       }
-    } else {
-      print("Form tidak valid"); // Ini untuk debugging
     }
   }
 
@@ -119,9 +135,18 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.blueAccent,
-        title: const Text("Target Penggunaan"),
+        backgroundColor: AppColors.primaryBlue,
+        elevation: 0,
+        title: const Text(
+          "Target Penggunaan",
+          style: TextStyle(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -136,53 +161,121 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
           ),
         ],
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.lightBlueAccent, Colors.blue],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 20),
-                          const Text(
-                            "⚡ TARGET ⚡",
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                              shadows: [
-                                Shadow(blurRadius: 5, color: Colors.black26)
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const Text(
-                            "PENGGUNAAN",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(blurRadius: 5, color: Colors.black26)
-                              ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textGrey.withValues(alpha: 0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.flag,
+                        size: 48,
+                        color: AppColors.primaryBlue,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "TARGET PENGGUNAAN",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryBlue,
+                          letterSpacing: 1.2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Tetapkan target penggunaan listrik Anda",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textGrey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Form Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textGrey.withValues(alpha: 0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _buildSectionLabel("Golongan Rumah Tangga"),
+                        const SizedBox(height: 8),
+                        _buildRoundedDropdown(
+                          label: "Pilih Golongan",
+                          value: selectedGolongan,
+                          items: golonganOptions,
+                          onChanged: (value) =>
+                              setState(() => selectedGolongan = value),
+                          icon: Icons.home,
+                        ),
+                        const SizedBox(height: 20),
+
+                        _buildSectionLabel("Parameter Target"),
+                        const SizedBox(height: 8),
+                        _buildRoundedDropdown(
+                          label: "Pilih Parameter",
+                          value: selectedParameter,
+                          items: parameterOptions,
+                          onChanged: (value) =>
+                              setState(() => selectedParameter = value),
+                          icon: Icons.track_changes,
+                        ),
+                        const SizedBox(height: 20),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionLabel("Waktu Mulai"),
+                                  const SizedBox(height: 8),
+                                  _buildRoundedDateField(
+                                    label: "Pilih tanggal mulai",
+                                    selectedDate: startDate,
+                                    onTap: () => pickDate(isStart: true),
+                                  ),
+                                ],
+                              ),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -282,19 +375,75 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        _buildSectionLabel("Nilai Target"),
+                        const SizedBox(height: 8),
+                        _buildRoundedTextField(
+                          label: "Masukkan nilai target",
+                          controller: targetController,
+                          icon: Icons.flag,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Save Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                _isFormFilled() ? _saveToFirestore : null,
+                            icon: Icon(
+                              Icons.save,
+                              color: _isFormFilled()
+                                  ? AppColors.white
+                                  : AppColors.textGrey,
+                            ),
+                            label: Text(
+                              "Simpan Target",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: _isFormFilled()
+                                    ? AppColors.white
+                                    : AppColors.textGrey,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: _isFormFilled()
+                                  ? AppColors.primaryBlue
+                                  : AppColors.grey,
+                              elevation: _isFormFilled() ? 2 : 0,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.black,
       ),
     );
   }
@@ -305,14 +454,14 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     required String? value,
     required List<String> items,
     required Function(String?) onChanged,
+    required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.backgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey[300]!,
+          color: AppColors.grey.withValues(alpha: 0.3),
         ),
       ),
       child: DropdownButtonFormField<String>(
@@ -321,23 +470,32 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
         items: items.map((item) {
           return DropdownMenuItem<String>(
             value: item,
-            child: Text(item, style: const TextStyle(color: Colors.black)),
+            child: Text(
+              item,
+              style: TextStyle(color: AppColors.black),
+            ),
           );
         }).toList(),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: Colors.grey[700]),
+          labelStyle: TextStyle(color: AppColors.textGrey),
+          prefixIcon: Icon(icon, color: AppColors.primaryBlue),
           border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
-        style: const TextStyle(color: Colors.black),
+        style: TextStyle(color: AppColors.black),
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return '$label harus dipilih';
+            return 'Field ini harus dipilih';
           }
           return null;
         },
-        icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700]),
+        icon: Icon(Icons.arrow_drop_down, color: AppColors.textGrey),
         isExpanded: true,
+        dropdownColor: AppColors.white,
       ),
     );
   }
@@ -358,22 +516,38 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
       ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[700]),
+        labelStyle: TextStyle(color: AppColors.textGrey),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.backgroundColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(
+            color: AppColors.grey.withValues(alpha: 0.3),
+          ),
         ),
-        suffixIcon: Icon(Icons.calendar_today, color: Colors.grey[700]),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.grey.withValues(alpha: 0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primaryBlue),
+        ),
+        prefixIcon: Icon(Icons.calendar_today, color: AppColors.primaryBlue),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
       validator: (value) {
         if (selectedDate == null) {
-          return '$label harus dipilih';
+          return 'Tanggal harus dipilih';
         }
         return null;
       },
-      style: const TextStyle(color: Colors.black),
+      style: TextStyle(color: AppColors.black),
     );
   }
 
@@ -381,27 +555,48 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
   Widget _buildRoundedTextField({
     required String label,
     required TextEditingController controller,
+    required IconData icon,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey[700]),
+        labelStyle: TextStyle(color: AppColors.textGrey),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.backgroundColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
+          borderSide: BorderSide(
+            color: AppColors.grey.withValues(alpha: 0.3),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.grey.withValues(alpha: 0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primaryBlue),
+        ),
+        prefixIcon: Icon(icon, color: AppColors.primaryBlue),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
         ),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return '$label tidak boleh kosong';
+          return 'Field ini tidak boleh kosong';
+        }
+        if (double.tryParse(value) == null) {
+          return 'Masukkan nilai yang valid';
         }
         return null;
       },
-      style: const TextStyle(color: Colors.black),
+      style: TextStyle(color: AppColors.black),
     );
   }
 }

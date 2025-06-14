@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:emonic/screens/home/views/database/database_helper.dart';
+import 'package:emonic/constants/colors.dart';
 
 class HistoryTargetScreen extends StatefulWidget {
   const HistoryTargetScreen({super.key});
@@ -111,8 +112,16 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) => AlertDialog(
-            title: const Text("Edit Target"),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+            title: Text(
+              "Edit Target",
+              style: TextStyle(
+                color: AppColors.primaryBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: AppColors.white,
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
             content: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -125,10 +134,18 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                       child: DropdownButtonFormField<String>(
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: AppColors.white,
                           labelText: "Golongan",
+                          labelStyle: TextStyle(color: AppColors.textGrey),
                           border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                BorderSide(color: AppColors.primaryBlue),
+                          ),
                         ),
                         value: selectedGolongan.isNotEmpty ? selectedGolongan : null,
                         onChanged: (String? newValue) {
@@ -146,21 +163,35 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                         ].map((golongan) {
                           return DropdownMenuItem<String>(
                             value: golongan,
-                            child: Text(golongan),
+                            child: Text(
+                              golongan,
+                              style: TextStyle(color: AppColors.black),
+                            ),
                           );
                         }).toList(),
+                        style: TextStyle(color: AppColors.black),
+                        icon: Icon(Icons.arrow_drop_down,
+                            color: AppColors.textGrey),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: 400.0,
                       child: DropdownButtonFormField<String>(
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: AppColors.white,
                           labelText: "Parameter",
+                          labelStyle: TextStyle(color: AppColors.textGrey),
                           border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                BorderSide(color: AppColors.primaryBlue),
+                          ),
                         ),
                         value: selectedParameter.isNotEmpty ? selectedParameter : null,
                         onChanged: (String? newValue) {
@@ -174,55 +205,90 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                         ].map((parameter) {
                           return DropdownMenuItem<String>(
                             value: parameter,
-                            child: Text(parameter),
+                            child: Text(
+                              parameter,
+                              style: TextStyle(color: AppColors.black),
+                            ),
                           );
                         }).toList(),
+                        style: TextStyle(color: AppColors.black),
+                        icon: Icon(Icons.arrow_drop_down,
+                            color: AppColors.textGrey),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: targetController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: AppColors.black),
+                      decoration: InputDecoration(
                         labelText: "Nilai Target",
-                        border: OutlineInputBorder(),
+                        labelStyle: TextStyle(color: AppColors.textGrey),
+                        filled: true,
+                        fillColor: AppColors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.grey),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.primaryBlue),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    ListTile(
-                      title: Text(
-                        "Waktu Mulai: ${startDate != null ? formatDate(startDate!.toIso8601String()) : 'Pilih Tanggal'}",
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.grey),
                       ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: startDate ?? DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          setStateDialog(() => startDate = picked);
-                        }
-                      },
+                      child: ListTile(
+                        title: Text(
+                          "Waktu Mulai: ${startDate != null ? formatDate(Timestamp.fromDate(startDate!)) : 'Pilih tanggal'}",
+                          style: TextStyle(color: AppColors.black),
+                        ),
+                        trailing: Icon(Icons.calendar_today,
+                            color: AppColors.primaryBlue),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: startDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            setStateDialog(() => startDate = picked);
+                          }
+                        },
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    ListTile(
-                      title: Text(
-                        "Waktu Akhir: ${endDate != null ? formatDate(endDate!.toIso8601String()) : 'Pilih Tanggal'}",
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.grey),
                       ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: endDate ?? DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          setStateDialog(() => endDate = picked);
-                        }
-                      },
+                      child: ListTile(
+                        title: Text(
+                          "Waktu Akhir: ${endDate != null ? formatDate(Timestamp.fromDate(endDate!)) : 'Pilih tanggal'}",
+                          style: TextStyle(color: AppColors.black),
+                        ),
+                        trailing: Icon(Icons.calendar_today,
+                            color: AppColors.primaryBlue),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: endDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            setStateDialog(() => endDate = picked);
+                          }
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -231,6 +297,9 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textGrey,
+                ),
                 child: const Text("Batal"),
               ),
               ElevatedButton(
@@ -267,12 +336,13 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: AppColors.primaryBlue,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text(
-                  "Simpan",
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: const Text("Simpan"),
               ),
             ],
           ),
@@ -305,6 +375,7 @@ class _HistoryTargetScreenState extends State<HistoryTargetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         title: const Text("Riwayat Target"),
         backgroundColor: Colors.blueAccent,
