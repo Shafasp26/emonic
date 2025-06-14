@@ -2,13 +2,11 @@ class MyUserEntity {
   String userId;
   String email;
   String name;
-  String? profilePicture;
 
   MyUserEntity({
     required this.userId,
     required this.email,
     required this.name,
-    this.profilePicture,
   });
 
   Map<String, Object?> toDocument() {
@@ -16,7 +14,6 @@ class MyUserEntity {
       'userId': userId,
       'email': email,
       'name': name,
-      'profilePicture': profilePicture,
     };
   }
 
@@ -25,7 +22,6 @@ class MyUserEntity {
       userId: doc['userId'],
       email: doc['email'],
       name: doc['name'],
-      profilePicture: doc['profilePicture'],
     );
   }
 }

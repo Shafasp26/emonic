@@ -1,16 +1,49 @@
-# emonic
+# Emonic
 
-A new Flutter project.
+Emonic adalah aplikasi mobile untuk mengelola emosi dan kesehatan mental. Aplikasi ini dikembangkan menggunakan Flutter framework.
 
-## Getting Started
+## Fitur Utama
 
-This project is a starting point for a Flutter application.
+- Mood tracking harian
+- Latihan mindfulness dan meditasi
+- Journal writing
+- Tips dan artikel tentang kesehatan mental
+- Reminder untuk aktivitas self-care
 
-A few resources to get you started if this is your first Flutter project:
+## Teknologi yang Digunakan
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Flutter & Dart
+- Firebase Authentication
+- Cloud Firestore
+- Local Storage (Shared Preferences)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Cara Instalasi
+
+1. Clone repository ini
+   ```bash
+   git clone https://github.com/username/emonic.git
+   ```
+
+2. Install dependencies
+   ```bash
+   flutter pub get
+   ```
+
+3. Jalankan aplikasi
+   ```bash
+   flutter run
+   ```
+
+## Tim Pengembang
+
+- [Nama Anggota 1]
+- [Nama Anggota 2]
+- [Nama Anggota 3]
+
+## Screenshot Aplikasi
+
+[Screenshot akan ditambahkan di sini]
+
+## Lisensi
+
+MIT License
