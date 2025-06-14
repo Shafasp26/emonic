@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart'; // Import halaman history
+import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart';
 
 class BerhasilInputScreen extends StatefulWidget {
   const BerhasilInputScreen({super.key});
@@ -12,19 +12,22 @@ class _BerhasilInputScreenState extends State<BerhasilInputScreen> {
   @override
   void initState() {
     super.initState();
-    // Tunggu beberapa detik sebelum kembali ke history screen
+    // Tunggu beberapa detik sebelum navigasi ke history screen
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HistoryTargetScreen()),
-      );
+      if (mounted) {
+        // Navigasi langsung ke history dengan push (bukan replace)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HistoryTargetScreen()),
+        );
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue, // Warna latar belakang sesuai gambar
+      backgroundColor: Colors.blue,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -77,7 +80,6 @@ class _BerhasilInputScreenState extends State<BerhasilInputScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            // Tombol keluar tidak diperlukan lagi untuk navigasi otomatis
           ],
         ),
       ),

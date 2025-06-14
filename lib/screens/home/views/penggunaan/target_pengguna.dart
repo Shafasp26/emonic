@@ -1,7 +1,9 @@
+// lib/screens/home/views/penggunaan/target_pengguna.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart'; // Pastikan path ini benar
-import 'package:emonic/screens/home/views/penggunaan/berhasil_input_screen.dart'; // Sesuaikan path ini
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
+import 'package:emonic/screens/home/views/database/database_helper.dart';
+import 'package:emonic/screens/home/views/penggunaan/history_target_screen.dart';
+import 'package:emonic/screens/home/views/penggunaan/berhasil_input_screen.dart';
 
 class TargetPenggunaanScreen extends StatefulWidget {
   const TargetPenggunaanScreen({Key? key}) : super(key: key);
@@ -17,6 +19,7 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
   DateTime? endDate;
   final targetController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
 
   // Daftar opsi untuk dropdown
   List<String> golonganOptions = [
@@ -52,23 +55,38 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
     }
   }
 
-  // Fungsi untuk menyimpan data ke Firestore
-  void _saveToFirestore() async {
+  // Fungsi untuk menyimpan data ke SQLite
+  void _saveToSQLite() async {
     if (_formKey.currentState?.validate() ?? false) {
       if (selectedGolongan != null &&
           selectedParameter != null &&
           startDate != null &&
           endDate != null &&
           targetController.text.isNotEmpty) {
+
+        // Dapatkan userId saat ini dari Firebase Authentication
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+
+        if (userId == null) {
+          // Tampilkan pesan error jika pengguna belum login
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Anda harus login untuk menyimpan target.")),
+          );
+          return; // Hentikan proses penyimpanan
+        }
+
         try {
-          await FirebaseFirestore.instance.collection('targets').add({
+          Map<String, dynamic> targetData = {
+            'userId': userId, // <--- Tambahkan userId di sini
             'golongan': selectedGolongan,
             'parameter': selectedParameter,
-            'startDate': Timestamp.fromDate(startDate!),
-            'endDate': Timestamp.fromDate(endDate!),
+            'startDate': startDate!.toIso8601String(),
+            'endDate': endDate!.toIso8601String(),
             'target': targetController.text,
-            'createdAt': Timestamp.now(),
-          });
+            'createdAt': DateTime.now().toIso8601String(),
+          };
+
+          await _databaseHelper.insertTarget(targetData);
 
           // Navigasi ke BerhasilInputScreen setelah berhasil menyimpan
           Navigator.pushReplacement(
@@ -112,7 +130,7 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const HistoryTargetScreen()), // Pastikan ini benar
+                    builder: (context) => const HistoryTargetScreen()),
               );
             },
           ),
@@ -173,7 +191,7 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
                             key: _formKey,
                             child: Column(
                               crossAxisAlignment:
-                                  CrossAxisAlignment.start, // Mengatur alignment form
+                                  CrossAxisAlignment.start,
                               children: <Widget>[
                                 Text(
                                   "Golongan Rumah Tangga",
@@ -236,22 +254,21 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     onPressed: _isFormFilled()
-                                        ? _saveToFirestore
-                                        : null, // Nonaktifkan tombol jika form belum terisi
+                                        ? _saveToSQLite
+                                        : null,
                                     style: ElevatedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 16, horizontal: 50),
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(12)),
-                                      // Warna tombol dan teks berdasarkan status form
                                       backgroundColor: _isFormFilled()
                                           ? const Color.fromARGB(
-                                              255, 250, 204, 2) // Kuning saat terisi
-                                          : Colors.lightBlue[100], // Biru sangat muda saat belum terisi
+                                              255, 250, 204, 2)
+                                          : Colors.lightBlue[100],
                                       foregroundColor: _isFormFilled()
-                                          ? Colors.blue // Biru tua saat terisi
-                                          : Colors.white, // Putih saat belum terisi
+                                          ? Colors.blue
+                                          : Colors.white,
                                       textStyle:
                                           const TextStyle(fontSize: 18),
                                     ),
@@ -260,8 +277,8 @@ class _TargetPenggunaanScreenState extends State<TargetPenggunaanScreen> {
                                       style: TextStyle(
                                         color: _isFormFilled()
                                             ? const Color.fromARGB(
-                                                255, 255, 255, 255) // Putih saat terisi
-                                            : Colors.white, // Putih saat belum terisi
+                                                255, 255, 255, 255)
+                                            : Colors.white,
                                       ),
                                     ),
                                   ),
